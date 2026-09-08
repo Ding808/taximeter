@@ -1,8 +1,8 @@
 # Release verification
 
-The release passed the local clean-checkout audit on `feat/taximeter-v0.1.0`.
-The hosted release build also completed; publishing requires npm credentials as
-described below. Public npm publication is not claimed.
+The initial release passed the local clean-checkout audit on `feat/taximeter-v0.1.0`.
+The historical audit transcripts below cover version 0.1.0. npm ownership was
+subsequently established with that version; the next release is 0.1.1.
 
 ## Behavioral evidence
 
@@ -799,8 +799,8 @@ Screenshots: <CHECKOUT>/tmp/dashboard-qa
   desktop, and Linux browser rendering have not been exercised here.
 - Native Windows ConPTY capture and agg encoding were executed for the follow-up
   demo recording documented below. VHS and asciinema command-line recipes have not been run.
-- The npm name remains unpublished. The README's source commands work before
-  publication; its registry command requires the first public release.
+- Historical registry-authentication failures below preceded npm ownership setup.
+  The 0.1.1 checks and release status are recorded separately from those transcripts.
 - Long-running/high-volume ledger performance, disk exhaustion, and OS crash
   recovery have not been stress-tested. Storage failures preserve traffic and
   can prevent enforcement; hidden redirects, unsupported forms, and encrypted
@@ -941,3 +941,37 @@ PASS all publishing preflight checks; npm was stubbed and nothing was published.
 
 The repository owner must supply a publishing-capable Actions secret before the
 hosted release can succeed. No live publication is represented by these checks.
+
+## Version 0.1.1 release checks
+
+The package version is now the source for the CLI, SDK, dashboard API, and archive
+validation. This prevents runtime version strings from lagging behind a Changesets
+release. Version 0.1.1 was generated through `npm run version-packages` with the
+matching package-lock metadata and changelog.
+
+On Windows with Node 24.13.0, typecheck, lint, all 298 tests, the build, package
+validation, isolated archive installation/startup, and CLI version checks passed.
+Ledger and policy coverage remained 100% in all four metrics. The isolated smoke
+check verified both listeners, the empty dashboard summary, prebuilt assets, and
+an installation directory with no configuration file.
+
+Captured final package-check output before adding this transcript:
+
+```text
+> taximeter@0.1.1 lint
+> biome check --error-on-warnings .
+
+Checked 58 files in 45ms. No fixes applied.
+
+> taximeter@0.1.1 check:package
+> node scripts/check-package.mjs
+
+Package verified: taximeter-0.1.1.tgz
+246248 bytes compressed; 648100 bytes unpacked; 25 files.
+Both CLI aliases, ESM entry point, declarations, and prebuilt UI are present.
+26 relative Markdown file links resolve inside the package.
+Files whitelist honored; no UI source maps, source tree, tests, dependencies, or local state.
+```
+
+`node dist/cli/index.js --version` returned `0.1.1`. Subsequent archive sizes include
+this transcript; the same package validation enforces the size limit.

@@ -18,9 +18,10 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+const versionSchema = z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
 const emptyArray = z.array(z.never()).length(0);
 const freshSummarySchema = z.strictObject({
-  version: z.literal("0.1.0"),
+  version: versionSchema,
   generatedAt: z.iso.datetime(),
   totalEvents: z.literal(0),
   blockedEvents: z.literal(0),
@@ -100,6 +101,10 @@ async function smokePackage() {
     .union([z.tuple([]), z.tuple([z.literal("--source")])])
     .parse(process.argv.slice(2));
   const source = args[0] === "--source";
+  const manifest = z
+    .object({ name: z.literal("taximeter"), version: versionSchema })
+    .parse(JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")));
+  const tarballFilename = `taximeter-${manifest.version}.tgz`;
   const inherited = environmentSchema.parse({ ...process.env });
   const npmCli = z
     .string()
@@ -109,7 +114,7 @@ async function smokePackage() {
     .parse(inherited.npm_execpath);
   const npxCli = join(dirname(realpathSync(npmCli)), "npx-cli.js");
   requireCondition(statSync(npxCli).isFile(), "The sibling npx-cli.js is missing.");
-  const tarball = resolve(root, "taximeter-0.1.0.tgz");
+  const tarball = resolve(root, tarballFilename);
   if (!source) requireCondition(existsSync(tarball), "Run npm pack before the package smoke test.");
   else requireCondition(existsSync(resolve(root, "dist/cli/index.js")), "Run npm run build first.");
   await Promise.all([requireFreePort(8402), requireFreePort(8403)]);
@@ -125,7 +130,7 @@ async function smokePackage() {
   const globalConfig = join(owned, "global.npmrc");
   writeFileSync(userConfig, "");
   writeFileSync(globalConfig, "");
-  if (!source) copyFileSync(tarball, join(cwd, "taximeter-0.1.0.tgz"));
+  if (!source) copyFileSync(tarball, join(cwd, tarballFilename));
   requireCondition(
     !existsSync(join(cwd, "taximeter.config.json")),
     "The working directory has a config file.",
@@ -162,12 +167,12 @@ async function smokePackage() {
   console.log(
     "PASS: isolated home and npm cache; no Taximeter config file or environment overrides.",
   );
-  console.log(source ? "$ node dist/cli/index.js start" : "$ npx ./taximeter-0.1.0.tgz start");
+  console.log(source ? "$ node dist/cli/index.js start" : `$ npx ./${tarballFilename} start`);
   const child = spawn(
     process.execPath,
     source
       ? [resolve(root, "dist/cli/index.js"), "start"]
-      : [npxCli, "./taximeter-0.1.0.tgz", "start"],
+      : [npxCli, `./${tarballFilename}`, "start"],
     { cwd, env: environment, stdio: ["ignore", "pipe", "pipe"], windowsHide: true },
   );
   let childError;
@@ -226,7 +231,7 @@ async function smokePackage() {
     );
 
     const summary = await fetchLocal("/api/summary", "application/json");
-    freshSummarySchema.parse(await summary.json());
+    freshSummarySchema.extend({ version: z.literal(manifest.version) }).parse(await summary.json());
     console.log(
       "PASS: validated empty dashboard summary and default budget without configuration.",
     );

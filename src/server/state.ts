@@ -4,6 +4,7 @@ import { countsAsSpend, totals } from "../ledger/derive";
 import type { Ledger } from "../ledger/store";
 import type { PaymentEvent } from "../model";
 import { spentForBudget } from "../policy";
+import { version } from "../version";
 import { dashboardStateSchema } from "./schema";
 
 function groups(events: PaymentEvent[], field: "taskId" | "agentId" | "host") {
@@ -59,7 +60,7 @@ export function dashboardState(ledger: Ledger, config: TaximeterConfig, now = Da
     return { ts: new Date(start).toISOString(), totals: totals(rows) };
   });
   return dashboardStateSchema.parse({
-    version: "0.1.0",
+    version,
     generatedAt: new Date(now).toISOString(),
     totalEvents: events.length,
     blockedEvents: events.filter((event) => event.status === "blocked").length,

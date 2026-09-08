@@ -8,6 +8,7 @@ import { formatAmount, totals } from "../ledger/derive";
 import { Ledger } from "../ledger/store";
 import { httpUrlSchema, labelSchema } from "../model";
 import { acquireLock, assertStopped, startServices } from "../server/lifecycle";
+import { version } from "../version";
 
 const common = z.strictObject({ db: z.string().optional(), config: z.string().optional() });
 const port = portInputSchema.optional();
@@ -51,7 +52,7 @@ export async function runCli(
   const program = new Command()
     .name("taximeter")
     .description("A taximeter for your AI agents.")
-    .version("0.1.0")
+    .version(version)
     .exitOverride();
   program.configureOutput({ writeOut: output, writeErr: (text) => process.stderr.write(text) });
   options(program.command("start").description("Start the local proxy and dashboard"))
@@ -73,7 +74,7 @@ export async function runCli(
       );
       const running = await startServices(config);
       output(
-        `Taximeter 0.1.0\nProxy: http://127.0.0.1:${running.proxyPort}\nDashboard: http://127.0.0.1:${running.dashboardPort}\nPoint an HTTP-proxy-aware agent at http://127.0.0.1:${running.proxyPort}.\nHTTPS CONNECT is unmetered; use --upstream or withMeter for HTTPS payments.\n`,
+        `Taximeter ${version}\nProxy: http://127.0.0.1:${running.proxyPort}\nDashboard: http://127.0.0.1:${running.dashboardPort}\nPoint an HTTP-proxy-aware agent at http://127.0.0.1:${running.proxyPort}.\nHTTPS CONNECT is unmetered; use --upstream or withMeter for HTTPS payments.\n`,
       );
       const shutdown = () => {
         process.off("SIGINT", shutdown);

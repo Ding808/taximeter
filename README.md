@@ -7,9 +7,8 @@ npx taximeter start
 ```
 
 Taximeter records supported agent payments, checks budgets before forwarding them,
-and keeps an exact local ledger. **This is the unpublished v0.1.0 source release.**
-The registry command above becomes available after publication; the three-command
-source quickstart below works today. Requires Node 20 or newer.
+and keeps an exact local ledger. Install from npm with the command above, or build
+from source with the quickstart below. Requires Node 20 or newer.
 
 ## A 20-second demo
 
@@ -51,7 +50,7 @@ Open a terminal in this source checkout, with Node 20+ and npm installed.
 You should now see:
 
 ```text
-Taximeter 0.1.0
+Taximeter 0.1.1
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
@@ -193,7 +192,7 @@ Host/recipient denials have `budget: null` and `remaining: null`.
 - A wallet or facilitator: it never holds keys or funds, signs, verifies, or settles payments.
 - A cloud service: no accounts, telemetry, analytics, or external font requests.
 - A multi-user service: no authentication, tenancy, or RBAC. Both listeners bind to loopback.
-- A universal payment parser: Permit2, ERC-7710, non-EVM rails, Stripe MPP, and cards are outside v0.1.0.
+- A universal payment parser: Permit2, ERC-7710, non-EVM rails, Stripe MPP, and cards are unsupported.
 - A security boundary against a bypassing agent: unsupported traffic passes through with diagnostics. CONNECT and post-upgrade frames are unmetered. Storage failure also passes traffic and prints a warning, so budget guarantees require working storage.
 
 Raw payment authorizations stay in the local audit ledger and JSON export. Treat
