@@ -21,7 +21,16 @@ const accepted = {
 const upstream = createServer((req, res) => {
   const header = z.string().optional().parse(req.headers["payment-signature"]);
   if (!header) {
-    res.writeHead(402, { "PAYMENT-REQUIRED": encode({ x402Version: 2, accepts: [accepted] }) });
+    const resource = z
+      .url()
+      .parse(`http://${z.string().parse(req.headers.host)}${z.string().parse(req.url)}`);
+    res.writeHead(402, {
+      "PAYMENT-REQUIRED": encode({
+        x402Version: 2,
+        resource: { url: resource },
+        accepts: [accepted],
+      }),
+    });
     res.end("Synthetic offer");
     return;
   }
@@ -57,6 +66,23 @@ try {
   const upstreamPort = await listen(upstream);
   const proxyPort = await listen(proxy);
   const resource = `http://127.0.0.1:${upstreamPort}/data`;
+  const offer = await fetch(resource);
+  assert.equal(offer.status, 402);
+  const challenge = z
+    .object({
+      x402Version: z.literal(2),
+      resource: z.object({ url: z.url() }),
+      accepts: z.array(z.object({ amount: z.literal("7") })),
+    })
+    .parse(
+      JSON.parse(
+        Buffer.from(z.string().parse(offer.headers.get("payment-required")), "base64").toString(
+          "utf8",
+        ),
+      ),
+    );
+  assert.equal(challenge.resource.url, resource);
+  await offer.arrayBuffer();
   console.log("Taximeter | local simulation | no money moves");
   console.log("Budget: 140 atomic units. Each payment: 7 atomic units.");
   for (let index = 1; index <= 21; index++) {

@@ -1,5 +1,9 @@
 # Decisions
 
+- Release packaging includes all relative README/SDK/contributor documentation targets and the example configuration. The package checker verifies these links and the explicit whitelist; source trees, tests, local state, and UI source maps stay excluded.
+- The release workflow can publish the first unpublished version on a credentialed `main` push when no changesets remain. Contributor instructions identify this initial-release behavior; no push or registry publication is performed during local verification.
+- The demo's unpaid v2 challenge branch is exercised before its signed synthetic replays, including the required `resource.url`, so demonstration code follows the same verified protocol contract.
+
 Recorded through the implementation audit on **2026-09-08**. The consolidated
 deviation inventory and detailed protocol evidence are in
 [SPEC-NOTES.md](SPEC-NOTES.md#implemented-deviations-and-release-limits).
