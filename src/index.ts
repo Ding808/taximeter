@@ -1,4 +1,3 @@
-export const version = "0.1.0";
 export { parseConfig, type TaximeterConfig } from "./config";
 export { loadConfig } from "./config/io";
 export { Meter } from "./core";
@@ -11,3 +10,4 @@ export { closeProxy, createProxy } from "./proxy";
 export type { Rail } from "./rails/types";
 export { X402Rail } from "./rails/x402";
 export { type MeteredFetch, type MeterOptions, withMeter } from "./sdk";
+export { version } from "./version";

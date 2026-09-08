@@ -88,10 +88,10 @@ change package behavior.
 
 The release workflow uses Changesets on `main` to prepare version changes and
 publish after the release pull request is merged. With no pending changesets,
-the action also publishes an unpublished version; the **first push to `main`
-with working npm credentials can publish v0.1.0 directly**. Enable credentials
-only when that initial release is intended. Maintainers configure npm
-credentials separately. `npm run version-packages` updates package versions and
+the action also publishes the current version if npm does not yet contain it.
+A push to `main` with working npm credentials can therefore publish directly.
+Maintainers configure npm credentials separately.
+`npm run version-packages` updates package versions and
 the changelog; `npm run release` builds and runs Changesets publishing. Publishing
 requires maintainer authorization and credentials. The presence of that workflow
 does not mean any package version has already been published.

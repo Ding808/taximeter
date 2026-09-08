@@ -2,11 +2,12 @@ import { z } from "zod";
 import { budgetSchema } from "../config";
 import { totalSchema } from "../ledger/derive";
 import { diagnosticSchema, integerStringSchema, paymentEventSchema } from "../model";
+import { version } from "../version";
 
 export const dashboardEventSchema = paymentEventSchema.omit({ raw: true });
 export const groupSchema = totalSchema.extend({ key: z.string().nullable() });
 export const dashboardStateSchema = z.object({
-  version: z.literal("0.1.0"),
+  version: z.literal(version),
   generatedAt: z.iso.datetime(),
   totalEvents: z.number().int(),
   blockedEvents: z.number().int(),
