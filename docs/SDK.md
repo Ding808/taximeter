@@ -4,13 +4,11 @@
 and policy engine used by the proxy. It supports Node 20 or later and ESM. It
 does not start a proxy or dashboard, create a payment, or configure a wallet.
 
-This project has not published its first npm release yet. From a source
-checkout, run `npm ci` and `npm run build`, then save the examples at the
-repository root. Their `import "taximeter"` statements resolve the package's own
-built exports. To try it in another project, run `npm pack` after building,
-copy the resulting tarball there, and use
-`npm install ./taximeter-0.1.0.tgz`. After the first publication,
-`npm install taximeter` will install the registry release.
+Install the registry release with `npm install taximeter`. From a source checkout,
+run `npm ci` and `npm run build`, then save the examples at the repository root.
+Their `import "taximeter"` statements resolve the package's own built exports.
+To try a local build in another project, run `npm pack`, copy the resulting
+tarball there, and use `npm install ./taximeter-0.1.1.tgz`.
 
 ## Try it locally
 

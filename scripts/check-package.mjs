@@ -7,7 +7,7 @@ import { z } from "zod";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const packageSchema = z.object({
   name: z.literal("taximeter"),
-  version: z.literal("0.1.0"),
+  version: z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/),
   type: z.literal("module"),
   bin: z.object({
     taximeter: z.literal("dist/cli/index.js"),
@@ -28,19 +28,20 @@ const packageFileSchema = z.object({
     ),
   size: z.number().int().nonnegative(),
 });
-const metadataSchema = z
-  .array(
-    z.object({
-      name: z.literal("taximeter"),
-      version: z.literal("0.1.0"),
-      filename: z.literal("taximeter-0.1.0.tgz"),
-      size: z.number().int().positive().lt(2_000_000),
-      unpackedSize: z.number().int().positive(),
-      entryCount: z.number().int().positive(),
-      files: z.array(packageFileSchema).min(1),
-    }),
-  )
-  .length(1);
+const metadataSchema = (version) =>
+  z
+    .array(
+      z.object({
+        name: z.literal("taximeter"),
+        version: z.literal(version),
+        filename: z.literal(`taximeter-${version}.tgz`),
+        size: z.number().int().positive().lt(2_000_000),
+        unpackedSize: z.number().int().positive(),
+        entryCount: z.number().int().positive(),
+        files: z.array(packageFileSchema).min(1),
+      }),
+    )
+    .length(1);
 
 function requireCondition(condition, message) {
   if (!condition) throw new Error(message);
@@ -111,7 +112,7 @@ function checkPackage() {
     maxBuffer: 5_000_000,
     stdio: ["ignore", "pipe", "pipe"],
   });
-  const metadata = metadataSchema.parse(JSON.parse(output))[0];
+  const metadata = metadataSchema(manifest.version).parse(JSON.parse(output))[0];
   if (!metadata) throw new Error("npm pack returned no package metadata");
   const paths = metadata.files.map((file) => file.path);
   requireCondition(new Set(paths).size === paths.length, "The package contains duplicate paths");

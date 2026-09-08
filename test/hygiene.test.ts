@@ -17,6 +17,8 @@ const generated = [
   "test-results/results.json",
   "tmp/smoke-output.txt",
   "taximeter-0.1.0.tgz",
+  "taximeter-0.1.1.tgz",
+  "taximeter-9.8.7.tgz",
   "ledger.db",
   "ledger.db-wal",
   "ledger.db-shm",
