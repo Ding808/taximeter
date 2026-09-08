@@ -1065,3 +1065,71 @@ Both CLI aliases, ESM entry point, declarations, and prebuilt UI are present.
 6 relative Markdown file links resolve inside the package.
 Files whitelist honored; no UI source maps, source tree, tests, dependencies, or local state.
 ```
+
+## Version 0.2.1: migration recovery and larger ledgers
+
+Ten migration regressions verify that the stderr notice precedes backup and
+backfill, a standalone schema-1 backup includes committed WAL events/outcomes/
+diagnostics, fresh and schema-2 opens stay quiet, and failed backfills preserve
+both the source schema and a valid backup. Repeated failures create distinct
+backups. Backup failures abort before schema changes; failures inside the copy
+leave only a partial file and close the reader. An independent writer is rejected
+while the backup is taken. A migrating CLI JSON report remains parseable.
+
+The source keeps an immediate transaction while a separate read-only connection
+runs `VACUUM INTO` with `synchronous=FULL`. This includes committed WAL pages
+without allocating a database-sized JavaScript buffer. SQLite documents the
+[consistent backup and output sync behavior](https://www.sqlite.org/lang_vacuum.html)
+and [immediate writer exclusion](https://www.sqlite.org/lang_transaction.html).
+Rollback uses a new database path; it does not rely on implicit rowid identity
+or claim atomicity between filesystem renaming and the source database commit.
+
+An additional Windows process-level probe used the actual published 0.1.2 entry
+to reopen the completed backup and compare events, derived outcomes, and exact
+totals. The source main file was 4,096 bytes while 193,672 bytes remained in its
+WAL. Another probe started the built 0.2.1 CLI with 10,000 legacy payments and
+ephemeral listeners: `Migrating ledger…` arrived at 199.63 ms; listeners were
+ready at 1,775.12 ms. Both the migrated source and the backup opened by 0.1.2
+contained 10,000 events totaling exactly `"10000"` atomic units. These elapsed
+times are observations from one local run, not startup guarantees.
+
+Final local checks used Node 24.13.0. Typecheck and lint passed, as did all 351
+tests across 21 files. Ledger coverage is 100% statements/functions/lines and
+95.87% branches; policy coverage is 100% in every metric. Build and isolated
+package startup passed. Captured verification output:
+
+```text
+Test Files  21 passed (21)
+     Tests  351 passed (351)
+
+Package verified: taximeter-0.2.1.tgz
+214632 bytes compressed; 554394 bytes unpacked; 16 files.
+Both CLI aliases, ESM entry point, declarations, and prebuilt UI are present.
+7 relative Markdown file links resolve inside the package.
+Files whitelist honored; no UI source maps, source tree, tests, dependencies, or local state.
+
+Taximeter 0.2.1
+Proxy: http://127.0.0.1:8402
+Dashboard: http://127.0.0.1:8403
+PASS: default proxy 8402 and dashboard 8403; default ledger created in the fresh home.
+PASS: validated empty dashboard summary and default budget without configuration.
+PASS: prebuilt dashboard HTML and 2 local JS/CSS assets served with correct MIME types.
+PASS: owned CLI and launcher processes stopped.
+PASS: verified temporary workspace removed.
+```
+
+### Throughput interpretation
+
+The earlier 3.272 ms median covers sequential `Meter.begin` plus `Meter.complete`.
+Its reciprocal is roughly 306 operations/second, but that is an estimate from a
+median, not measured lock-hold time, sustained throughput, or a concurrency
+ceiling. The two calls include JavaScript work and multiple transactions; a true
+throughput measurement must include the full distribution, competing writers,
+and the intended traffic workload.
+
+The committed `scripts/benchmark-ledger.mjs` now accepts task and agent partition
+counts and reports populated `cache_prefix` partitions and rows. Final source
+verification streams one payment and its outcomes at a time, checks exact totals,
+all settlements and attribution, the next payment's exact rejection body, zero
+diagnostics, and every cache partition root. Cache statistics are collected
+**after** timing to avoid a full index scan warming the measured reads.
