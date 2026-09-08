@@ -14,6 +14,7 @@ import {
   paymentEventSchema,
 } from "../model";
 import type { PolicyState } from "../policy";
+import { backupLedger } from "./backup";
 import { LedgerCache } from "./cache";
 import { deriveEvents } from "./derive";
 
@@ -45,7 +46,14 @@ export class Ledger {
             .parse(
               this.database.prepare("SELECT MAX(version) AS version FROM schema_version").get(),
             );
-          if (version.version === 1) this.database.exec(cacheMigration);
+          if (version.version === 1) {
+            if (table && path !== ":memory:") {
+              process.stderr.write("Migrating ledger…\n");
+              const backup = backupLedger(path);
+              process.stderr.write(`Ledger backup saved: ${backup}\n`);
+            }
+            this.database.exec(cacheMigration);
+          }
           const cache = new LedgerCache(this.database);
           cache.synchronize();
           return cache;
