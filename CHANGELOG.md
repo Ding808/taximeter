@@ -1,5 +1,11 @@
 # Taximeter
 
+## 0.2.1
+
+### Patch Changes
+
+- Announce legacy ledger migration and save a standalone, WAL-aware schema-1 backup before upgrading. Abort the upgrade if the backup fails, retain completed backups for rollback, and document recovery using a separate database path. Extend the reproducible ledger benchmark to cover larger histories and task/agent partition counts.
+
 ## 0.2.0
 
 ### Minor Changes

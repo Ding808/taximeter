@@ -8,7 +8,7 @@ Install the registry release with `npm install taximeter`. From a source checkou
 run `npm ci` and `npm run build`, then save the examples at the repository root.
 Their `import "taximeter"` statements resolve the package's own built exports.
 To try a local build in another project, run `npm pack`, copy the resulting
-tarball there, and use `npm install ./taximeter-0.2.0.tgz`.
+tarball there, and use `npm install ./taximeter-0.2.1.tgz`.
 
 ## Try it locally
 
@@ -144,11 +144,19 @@ wrappers after their requests finish, then let the owner close the ledger.
 Reusing a closed wrapper passes requests directly to the original transport
 without metering. Do not use a closed wrapper for later payments.
 
-Version 0.2.0 upgrades existing ledgers to schema version 2 when opening them.
+Version 0.2.x upgrades existing ledgers to schema version 2 when opening them.
 Source events and outcomes remain unchanged; the added budget index is rebuilt
 from those records. Upgrade all writers together. Older 0.1.x clients cannot
 reopen a migrated database. `ledger.rebuildCache()` repairs the derived index
 from the append-only log inside a transaction.
+
+From 0.2.1, opening an on-disk schema-1 ledger prints `Migrating ledger…` to stderr
+and saves a standalone, WAL-aware backup at
+`<database>.backup-v1-<unique suffix>/ledger.db` before upgrading. The saved path
+is printed before the synchronous backfill begins. A backup failure aborts the
+upgrade; a backfill failure rolls it back and retains the completed backup.
+Fresh and schema-2 databases skip this step. See the [rollback instructions](../README.md#configuration)
+before using a backup with an older client.
 
 ## Fetch behavior and limits
 
