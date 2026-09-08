@@ -9,6 +9,7 @@ describe("external input contracts", () => {
       ports: { proxy: 8402, dashboard: 8403 },
       db: "~/.taximeter/ledger.db",
       budgets: { global: { amount: "100000000" } },
+      policy: { unknownAsset: "deny" },
     });
   });
   test("later layers win while sibling fields remain", () => {
@@ -38,12 +39,25 @@ describe("external input contracts", () => {
   });
   test("partial policy and port layers never reapply defaults over explicit settings", () => {
     const config = parseConfig(
-      { policy: { maxSinglePayment: "20", denyHosts: ["deny.test"] }, ports: { proxy: 9100 } },
+      {
+        policy: { maxSinglePayment: "20", denyHosts: ["deny.test"], unknownAsset: "allow" },
+        ports: { proxy: 9100 },
+      },
       { policy: { allowHosts: ["allow.test"] }, ports: { dashboard: 9200 } },
     );
     expect(config.policy.maxSinglePayment).toBe("20");
     expect(config.policy.denyHosts).toEqual(["deny.test"]);
+    expect(config.policy.unknownAsset).toBe("allow");
     expect(config.ports).toEqual({ proxy: 9100, dashboard: 9200 });
+  });
+  test("unknown asset policy accepts only explicit allow or deny and honors later layers", () => {
+    expect(parseConfig({ policy: { unknownAsset: "allow" } }).policy.unknownAsset).toBe("allow");
+    expect(
+      parseConfig({ policy: { unknownAsset: "allow" } }, { policy: { unknownAsset: "deny" } })
+        .policy.unknownAsset,
+    ).toBe("deny");
+    for (const unknownAsset of ["ALLOW", "block", "", null, true])
+      expect(() => parseConfig({ policy: { unknownAsset } })).toThrow();
   });
   test.each([
     { privateKey: "secret" },

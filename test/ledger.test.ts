@@ -408,7 +408,7 @@ describe("append-only SQLite ledger", () => {
     const future = new Database(path);
     try {
       future.exec(
-        "CREATE TABLE schema_version (version INTEGER PRIMARY KEY); INSERT INTO schema_version VALUES (2)",
+        "CREATE TABLE schema_version (version INTEGER PRIMARY KEY); INSERT INTO schema_version VALUES (3)",
       );
     } finally {
       future.close();
@@ -416,7 +416,7 @@ describe("append-only SQLite ledger", () => {
     expect(() => new Ledger(path)).toThrow();
     const inspector = new Database(path);
     try {
-      expect(inspector.prepare("SELECT version FROM schema_version").get()).toEqual({ version: 2 });
+      expect(inspector.prepare("SELECT version FROM schema_version").get()).toEqual({ version: 3 });
     } finally {
       inspector.close();
     }

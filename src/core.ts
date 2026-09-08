@@ -8,7 +8,7 @@ import {
   type PaymentEvent,
   paymentEventSchema,
 } from "./model";
-import { evaluate } from "./policy";
+import { evaluateWithState } from "./policy";
 import type { WireRequest, WireResponse } from "./rails/types";
 import { X402Rail } from "./rails/x402";
 
@@ -43,8 +43,9 @@ export class Meter {
     if (!proposed) return {};
     try {
       return this.ledger.transaction(() => {
-        const events = this.ledger.view();
-        const decision = evaluate(proposed, events, this.config, Date.now());
+        const now = Date.now();
+        const state = this.ledger.policyState(proposed, this.config.budgets, now);
+        const decision = evaluateWithState(proposed, state, this.config, now);
         if (!decision.allowed) {
           this.ledger.append(
             paymentEventSchema.parse({
@@ -56,9 +57,7 @@ export class Meter {
           );
           return { body: decision.body };
         }
-        const previous = events.find(
-          (event) => event.status === "observed" && event.paymentKey === proposed.paymentKey,
-        );
+        const previous = state.reserved;
         const payment = previous ?? proposed;
         if (!previous) this.ledger.append(payment);
         const ts = new Date().toISOString();
