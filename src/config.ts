@@ -14,6 +14,7 @@ export const policySchema = z.strictObject({
   allowPayTo: z.array(labelSchema).default([]),
   maxSinglePayment: amountSchema.nullable().default("1000000"),
   maxSingleAsset: labelSchema.default("USDC"),
+  unknownAsset: z.enum(["allow", "deny"]).default("deny"),
 });
 export const portsSchema = z.strictObject({
   proxy: z.number().int().min(0).max(65535).default(8402),
@@ -53,6 +54,7 @@ export const configPatchSchema = z.strictObject({
       allowPayTo: z.array(labelSchema).optional(),
       maxSinglePayment: amountSchema.nullable().optional(),
       maxSingleAsset: labelSchema.optional(),
+      unknownAsset: z.enum(["allow", "deny"]).optional(),
     })
     .optional(),
   ports: z

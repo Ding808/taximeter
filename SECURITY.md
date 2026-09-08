@@ -7,7 +7,7 @@ on-chain settlement.
 
 ## Supported version
 
-Security fixes currently target the `0.1.0` release line. No older release line
+Security fixes currently target the `0.2.x` release line. No older release line
 is maintained. This policy describes support; it is not a claim that the package
 has already been published or independently audited.
 
@@ -32,6 +32,9 @@ against a hostile agent or another process running as the same user.
 - Unsupported or malformed payment forms pass through with a diagnostic.
   Supported parsing is narrower than the full x402 protocol; see
   [protocol notes](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md).
+- Parsed payments outside the offline asset registry are denied by default.
+  Setting `policy.unknownAsset` to `allow` permits them; only matching contract
+  budgets and caps then apply. Metadata supplied with a payment does not make its asset trusted.
 - HTTPS CONNECT tunnels encrypted bytes without metering their payments.
   Taximeter does not install a certificate authority or intercept TLS.
 - The SDK must wrap the transport inside the payment wrapper. Redirects and
