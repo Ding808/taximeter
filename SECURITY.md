@@ -31,7 +31,7 @@ against a hostile agent or another process running as the same user.
 
 - Unsupported or malformed payment forms pass through with a diagnostic.
   Supported parsing is narrower than the full x402 protocol; see
-  [SPEC-NOTES.md](SPEC-NOTES.md).
+  [protocol notes](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md).
 - HTTPS CONNECT tunnels encrypted bytes without metering their payments.
   Taximeter does not install a certificate authority or intercept TLS.
 - The SDK must wrap the transport inside the payment wrapper. Redirects and
