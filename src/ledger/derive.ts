@@ -24,11 +24,17 @@ function order(a: { ts: string; id: string }, b: { ts: string; id: string }): nu
 export function deriveEvents(events: PaymentEvent[], outcomes: Outcome[] = []): PaymentEvent[] {
   const seenIds = new Set<string>();
   const seenPayments = new Set<string>();
-  const latest = new Map<string, Outcome>();
+  const latest = new Map<string, Map<string, Outcome>>();
+  const attempted = new Map<string, string>();
   for (const outcome of [...outcomes].sort(order)) {
-    if (latest.get(outcome.paymentId)?.status !== "confirmed" || outcome.status === "confirmed") {
-      latest.set(outcome.paymentId, outcome);
+    const attempts = latest.get(outcome.paymentId) ?? new Map<string, Outcome>();
+    const attemptId = outcome.attemptId ?? outcome.paymentId;
+    if (attempts.get(attemptId)?.status !== "confirmed" || outcome.status === "confirmed") {
+      attempts.set(attemptId, outcome);
     }
+    latest.set(outcome.paymentId, attempts);
+    if (outcome.attemptedAt && outcome.attemptedAt > (attempted.get(outcome.paymentId) ?? ""))
+      attempted.set(outcome.paymentId, outcome.attemptedAt);
   }
   const result: PaymentEvent[] = [];
   for (const event of [...events].sort(order)) {
@@ -38,13 +44,18 @@ export function deriveEvents(events: PaymentEvent[], outcomes: Outcome[] = []): 
       if (seenPayments.has(event.paymentKey)) continue;
       seenPayments.add(event.paymentKey);
     }
-    const outcome = latest.get(event.id);
+    const attempts = [...(latest.get(event.id)?.values() ?? [])];
+    const outcome =
+      attempts.find((value) => value.status === "confirmed") ??
+      attempts.find((value) => value.status === "unknown") ??
+      attempts.at(-1);
     const status =
       event.settlementStatus === "confirmed"
         ? "confirmed"
         : (outcome?.status ?? event.settlementStatus);
     result.push({
       ...event,
+      ...(attempted.has(event.id) ? { attemptedAt: attempted.get(event.id) } : {}),
       settlementStatus: status,
       settlement_unknown: event.status === "observed" && status === "unknown",
       ...(outcome?.txHash ? { txHash: outcome.txHash } : {}),
