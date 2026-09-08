@@ -154,6 +154,21 @@ describe("x402 detection and protocol transparency", () => {
     expect(diagnostics).toHaveLength(0);
   });
 
+  test("simultaneous protocol headers cannot select conflicting authorizations", () => {
+    const { rail, diagnostics } = recorder();
+    expect(rail.parse(signed(payloadV2(), 2, { "x-payment": encode(payloadV1()) }))).toBeNull();
+    expect(diagnostics.some((entry) => entry.code === "parse_failed")).toBe(true);
+  });
+
+  test("a broken diagnostic sink never throws into the request path", () => {
+    const rail = new X402Rail({
+      diagnostic: () => {
+        throw new Error("Diagnostic storage unavailable");
+      },
+    });
+    expect(() => rail.parse(request({ "payment-signature": "invalid%%%" }))).not.toThrow();
+  });
+
   test.each(["garbled%%%", "", encode("not an object"), encode({}), "bm90IGpzb24="])(
     "malformed signed header %j produces a diagnostic and leaves input intact",
     (value) => {
@@ -246,6 +261,17 @@ describe("v2 exact EVM EIP-3009 replay parsing", () => {
   test("optional resource and nullish extension metadata do not discard a payment", () => {
     const value = { ...payloadV2(), resource: null, extensions: null };
     expect(new X402Rail().parse(signed(value))?.amount).toBe("10000");
+  });
+
+  test("malformed attribution is diagnosed without dropping known spend", () => {
+    const { rail, diagnostics } = recorder();
+    const event = rail.parse(
+      signed(payloadV2(), 2, { "taximeter-task": "t".repeat(257), "taximeter-agent": "" }),
+    );
+    expect(event?.amount).toBe("10000");
+    expect(event?.taskId).toBeUndefined();
+    expect(event?.agentId).toBeUndefined();
+    expect(diagnostics.some((entry) => entry.code === "parse_failed")).toBe(true);
   });
 
   test("unknown tokens retain atomic amounts without trusting spoofed USDC metadata", () => {
@@ -514,6 +540,16 @@ describe("settlement evidence", () => {
         settled({ success: false, transaction: "", errorReason: "insufficient_funds" }, 402),
       ),
     ).toMatchObject({ status: "failed", reason: "insufficient_funds" });
+  });
+
+  test("failed settlement reported alongside a server failure remains conservatively unknown", () => {
+    const rail = new X402Rail();
+    expect(
+      rail.settlement(
+        parsedEvent(rail),
+        settled({ success: false, transaction: "", errorReason: "unexpected_settle_error" }, 500),
+      ).status,
+    ).toBe("unknown");
   });
 
   test.each([200, 402, 500])("missing settlement header on HTTP %i remains unknown", (status) => {
