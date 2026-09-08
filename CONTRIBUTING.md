@@ -68,6 +68,23 @@ require wallets, keys, funds, a facilitator, or an external API. Keep cleanup
 bounded to directories created by the test. Dashboard changes should be checked
 in light and dark themes at both desktop and narrow mobile widths.
 
+The offline ledger benchmark is committed at `scripts/benchmark-ledger.mjs`.
+After `npm run build`, compare history size with fixed attribution, then repeat
+with more task and agent groups:
+
+```sh
+node scripts/benchmark-ledger.mjs --counts 50000,500000 --payments 100 --batches 1
+node scripts/benchmark-ledger.mjs --counts 50000,500000 --payments 100 --batches 1 --task-partitions 1000 --agent-partitions 100
+```
+
+Run cases sequentially on the same machine without other heavy work during
+timing. `--help` lists the baseline-entry and temporary-directory options.
+Each case reports JSON to stdout and progress to stderr; it verifies exact
+source totals, settlement, attribution, budget rejection, and cache partition
+roots after timing. Source verification streams one payment at a time so a
+500,000-payment run does not allocate a full replay array. Measurements and
+their limits are recorded in [VERIFICATION.md](VERIFICATION.md).
+
 Golden CSV snapshots live in `test/__snapshots__/`. Regenerate a snapshot only
 for an intentional output change that is explained in the pull request and
 accepted in review. Never update a snapshot, remove a test, or relax an assertion
