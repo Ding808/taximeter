@@ -36,7 +36,7 @@
     "lint": "biome check --error-on-warnings .",
     "format": "biome check --write .",
     "test": "vitest run --coverage",
-    "build": "tsup",
+    "build": "tsup && vite build",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "npm run build && changeset publish"
