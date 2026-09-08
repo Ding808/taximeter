@@ -20,6 +20,8 @@ npm run lint
 npm test
 npm run build
 npm pack
+npm run check:package
+npm run smoke:package
 git status --porcelain
 ```
 
@@ -85,7 +87,10 @@ version bump. Documentation-only changes may omit a changeset when they do not
 change package behavior.
 
 The release workflow uses Changesets on `main` to prepare version changes and
-publish after the release pull request is merged. Maintainers configure npm
+publish after the release pull request is merged. With no pending changesets,
+the action also publishes an unpublished version; the **first push to `main`
+with working npm credentials can publish v0.1.0 directly**. Enable credentials
+only when that initial release is intended. Maintainers configure npm
 credentials separately. `npm run version-packages` updates package versions and
 the changelog; `npm run release` builds and runs Changesets publishing. Publishing
 requires maintainer authorization and credentials. The presence of that workflow
