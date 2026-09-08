@@ -22,7 +22,7 @@ jobs:
       - uses: changesets/action@v1
         with:
           version: npm run version-packages
-          publish: npm run release
+          publish: bash .github/scripts/publish.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

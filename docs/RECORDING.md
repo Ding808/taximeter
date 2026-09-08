@@ -31,21 +31,10 @@ The final frame is held long enough for the complete GIF to last 20 seconds.
 The resulting GIF is 1049×653 and 96,519 bytes. The final block response and ledger
 total remain visible together. No demo output is fabricated or replaced.
 
-The local recording workspace is `E:\Taximeter-Demo`: it contains `demo.cast`,
-`demo.gif`, `demo.mp4`, the raw terminal output, `record-demo.mjs`,
-`render-demo.ps1`, and the downloaded tools. FFmpeg already installed on the
-computer converts the GIF to an H.264 MP4 with one padding row and column for
-even dimensions.
-With that local workspace present, repeat the capture from PowerShell:
-
-```powershell
-node E:\Taximeter-Demo\record-demo.mjs
-& E:\Taximeter-Demo\render-demo.ps1
-Copy-Item E:\Taximeter-Demo\demo.gif E:\Taximeter\docs\demo.gif
-```
-
-The Windows recording helpers and their dependencies stay outside the repository
-and npm package. The following alternatives work from other source checkouts.
+The source capture and encoding tools are local development artifacts and are
+excluded from the repository and npm package. FFmpeg converts the GIF to an H.264
+MP4 with one padding row and column for even dimensions. The following recipes
+can reproduce the demonstration from a source checkout.
 
 ## VHS
 
