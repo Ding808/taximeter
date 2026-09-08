@@ -1,0 +1,16 @@
+{
+  "budgets": {
+    "perTask": { "amount": "5000000", "asset": "USDC" },
+    "perAgent": { "amount": "50000000", "asset": "USDC", "window": "24h" },
+    "global": { "amount": "100000000", "asset": "USDC", "window": "24h" }
+  },
+  "policy": {
+    "allowHosts": [],
+    "denyHosts": [],
+    "allowPayTo": [],
+    "maxSinglePayment": "1000000",
+    "maxSingleAsset": "USDC"
+  },
+  "ports": { "proxy": 8402, "dashboard": 8403 },
+  "db": "~/.taximeter/ledger.db"
+}

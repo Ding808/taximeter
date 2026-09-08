@@ -1,0 +1,100 @@
+# Contributing to Taximeter
+
+Taximeter observes agent payments, records them locally, and gates supported
+authorizations against budgets. Start with [SPEC.md](SPEC.md), then read
+[SPEC-NOTES.md](SPEC-NOTES.md) for the supported protocol and
+[DECISIONS.md](DECISIONS.md) for implementation choices.
+
+## Development
+
+Use Node.js 20 or 22 and npm. The package is TypeScript with ESM exports. CI is
+configured for both Node versions on Linux and Windows. Dependencies and tooling
+are pinned; keep `package-lock.json` consistent with `package.json`.
+
+From a checkout, run the same sequence as CI:
+
+```sh
+npm ci
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm pack
+npm run check:package
+npm run smoke:package
+git status --porcelain
+```
+
+The build creates the Node package in `dist/` and the prebuilt React dashboard in
+`dist/ui/`. A package consumer must not need to build the dashboard. On a clean
+checkout, the final command must print nothing. During development, it should
+show only your intentional changes. Do not commit generated bundles, coverage,
+tarballs, local configuration, or SQLite state.
+
+Use `npm run format` to apply Biome formatting. Keep LF line endings as specified
+in `.gitattributes`. Check the package contents and compressed size with
+`npm pack --dry-run`; the release tarball must stay below 2 MB.
+
+## Changes that preserve trust
+
+- Preserve unknown HTTP traffic byte for byte. Record a diagnostic when a format
+  cannot be parsed; do not guess the payment fields or rewrite its payload.
+- Store monetary amounts as integer strings. Use `BigInt` for arithmetic and
+  convert to a display string only at the rendering edge. Never combine assets
+  or networks, infer exchange rates, or use floating point for money.
+- Parse external inputs with Zod. Keep strict TypeScript types and
+  `noUncheckedIndexedAccess`; do not introduce `any` to silence a type error.
+- Keep policy and ledger derivations pure and synchronous. Evaluate policy and
+  reserve capacity within the same SQLite transaction before forwarding.
+- Keep events and outcomes append-only. Preserve uncertainty, retry identity,
+  concurrent attempt accounting, and original attribution.
+- Never add custody, private-key handling, payment signing, settlement,
+  telemetry, hosted accounts, or runtime metadata lookups. Runtime networking
+  is limited to forwarding the caller's traffic and the local dashboard.
+
+Read the primary x402 specification and published package types before changing
+a wire parser. Record changed assumptions and supported subsets in
+`SPEC-NOTES.md`. An internal model field is not necessarily a protocol field.
+
+## Tests and review
+
+For policy changes, write the failing behavioral test first. Add regressions for
+traffic corruption, arithmetic, replay, concurrency, and settlement failures when
+changing those paths. Keep policy and ledger coverage at least 90%; coverage is
+a floor, not a substitute for asserting observable behavior.
+
+Fixtures use synthetic authorizations and localhost servers. Tests must not
+require wallets, keys, funds, a facilitator, or an external API. Keep cleanup
+bounded to directories created by the test. Dashboard changes should be checked
+in light and dark themes at both desktop and narrow mobile widths.
+
+Golden CSV snapshots live in `test/__snapshots__/`. Regenerate a snapshot only
+for an intentional output change that is explained in the pull request and
+accepted in review. Never update a snapshot, remove a test, or relax an assertion
+simply to make a failure disappear.
+
+Open a focused pull request with the problem, resulting behavior, and actual
+validation results. Explain compatibility changes and known limitations. Use
+Conventional Commits, such as `fix(proxy): preserve response trailers`. Update
+the relevant docs when behavior or configuration changes. Report vulnerabilities
+privately as described in [SECURITY.md](SECURITY.md).
+
+## Versioning and releases
+
+For a user-visible change, run `npm run changeset` and commit the generated
+changeset with the change. Describe its effect on users and choose the appropriate
+version bump. Documentation-only changes may omit a changeset when they do not
+change package behavior.
+
+The release workflow uses Changesets on `main` to prepare version changes and
+publish after the release pull request is merged. With no pending changesets,
+the action also publishes an unpublished version; the **first push to `main`
+with working npm credentials can publish v0.1.0 directly**. Enable credentials
+only when that initial release is intended. Maintainers configure npm
+credentials separately. `npm run version-packages` updates package versions and
+the changelog; `npm run release` builds and runs Changesets publishing. Publishing
+requires maintainer authorization and credentials. The presence of that workflow
+does not mean any package version has already been published.
+
+Contributions are provided under the project's [MIT license](LICENSE). Follow the
+[code of conduct](CODE_OF_CONDUCT.md) in issues, reviews, and other project spaces.
