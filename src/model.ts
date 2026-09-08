@@ -1,9 +1,7 @@
 import { z } from "zod";
 
-export const amountSchema = z
-  .string()
-  .max(78)
-  .regex(/^(0|[1-9][0-9]*)$/);
+export const integerStringSchema = z.string().regex(/^(0|[1-9][0-9]*)$/);
+export const amountSchema = integerStringSchema.max(78);
 export const httpUrlSchema = z.url().refine((value) => {
   const url = new URL(value);
   return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password;
@@ -72,7 +70,7 @@ export const blockedBodySchema = z.object({
   error: z.literal("blocked_by_taximeter"),
   reason: z.string(),
   budget: amountSchema.nullable(),
-  spent: amountSchema,
+  spent: integerStringSchema,
   remaining: amountSchema.nullable(),
 });
 export type BlockedBody = z.infer<typeof blockedBodySchema>;
