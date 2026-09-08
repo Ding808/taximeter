@@ -1,10 +1,14 @@
-import { matchesAsset } from "../assets";
+import { assetMetadata, matchesAsset } from "../assets";
 import type { Budget, TaximeterConfig } from "../config";
 import { assetKey, countsAsSpend, deriveEvents } from "../ledger/derive";
 import type { BlockedBody, PaymentEvent } from "../model";
 
 export type Decision = { allowed: true } | { allowed: false; body: BlockedBody };
 export type Scope = "perTask" | "perAgent" | "global";
+export type PolicyState = {
+  reserved: PaymentEvent | undefined;
+  spent: Record<Scope, string>;
+};
 const windows = { "1h": 3_600_000, "24h": 86_400_000, "7d": 604_800_000, "30d": 2_592_000_000 };
 
 function deny(reason: string, budget: string | null = null, spent = "0"): Decision {
@@ -48,6 +52,36 @@ export function evaluate(
   config: TaximeterConfig,
   now: number,
 ): Decision {
+  return evaluateWithState(
+    proposed,
+    {
+      reserved: events.find(
+        (event) => event.paymentKey === proposed.paymentKey && countsAsSpend(event),
+      ),
+      spent: {
+        perTask: config.budgets.perTask
+          ? spentForBudget(proposed, events, config.budgets.perTask, "perTask", now)
+          : "0",
+        perAgent: config.budgets.perAgent
+          ? spentForBudget(proposed, events, config.budgets.perAgent, "perAgent", now)
+          : "0",
+        global: config.budgets.global
+          ? spentForBudget(proposed, events, config.budgets.global, "global", now)
+          : "0",
+      },
+    },
+    config,
+    now,
+  );
+}
+
+/** Same pure decision using an exact, transactionally read budget snapshot. */
+export function evaluateWithState(
+  proposed: PaymentEvent,
+  state: PolicyState,
+  config: TaximeterConfig,
+  now: number,
+): Decision {
   const { policy } = config;
   const host = proposed.host.toLowerCase();
   if (policy.denyHosts.some((value) => value.toLowerCase() === host)) return deny("host_denied");
@@ -62,15 +96,18 @@ export function evaluate(
   )
     return deny("recipient_not_allowed");
   if (
+    policy.unknownAsset === "deny" &&
+    !assetMetadata(proposed.network, proposed.asset).decimalsKnown
+  )
+    return deny("unknown_asset");
+  if (
     policy.maxSinglePayment !== null &&
     matchesAsset(policy.maxSingleAsset, proposed) &&
     BigInt(proposed.amount) > BigInt(policy.maxSinglePayment)
   )
     return deny("max_single_payment", policy.maxSinglePayment);
 
-  const reserved = events.find(
-    (event) => event.paymentKey === proposed.paymentKey && countsAsSpend(event),
-  );
+  const reserved = state.reserved && countsAsSpend(state.reserved) ? state.reserved : undefined;
   for (const scope of ["perTask", "perAgent", "global"] as const) {
     const budget = config.budgets[scope];
     if (
@@ -79,7 +116,7 @@ export function evaluate(
       (budget.network && budget.network !== proposed.network)
     )
       continue;
-    const spent = spentForBudget(proposed, events, budget, scope, now);
+    const spent = state.spent[scope];
     const reservedTime = reserved ? Date.parse(reserved.attemptedAt ?? reserved.ts) : -Infinity;
     const inWindow =
       reservedTime <= now && (!budget.window || reservedTime >= now - windows[budget.window]);

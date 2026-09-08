@@ -1,5 +1,13 @@
 # Taximeter
 
+## 0.2.0
+
+### Minor Changes
+
+- Default to rejecting parsed payments for unknown assets. Set `policy.unknownAsset` to `allow` to opt in and configure exact contract-address budgets for custom tokens.
+
+  Replace full ledger replay during payment gating with transactional, rebuildable payment projections and exact timestamp-indexed budget sums. Preserve append-only source records, retry and settlement semantics, and precise rolling-window boundaries. Existing databases migrate to schema version 2 when opened; older 0.1.x clients cannot reopen the migrated schema.
+
 ## 0.1.2
 
 ### Patch Changes

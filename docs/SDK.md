@@ -8,7 +8,7 @@ Install the registry release with `npm install taximeter`. From a source checkou
 run `npm ci` and `npm run build`, then save the examples at the repository root.
 Their `import "taximeter"` statements resolve the package's own built exports.
 To try a local build in another project, run `npm pack`, copy the resulting
-tarball there, and use `npm install ./taximeter-0.1.2.tgz`.
+tarball there, and use `npm install ./taximeter-0.2.0.tgz`.
 
 ## Try it locally
 
@@ -132,10 +132,23 @@ environment, with explicit SDK options taking precedence. See the
 files or environment settings. Keep budgets consistent across writers sharing
 the same database.
 
+`config.policy.unknownAsset` defaults to `"deny"`. Only network and contract pairs
+in Taximeter's offline asset registry are known; payment-supplied symbols and
+decimal metadata do not establish trust. To use custom-token budgets, explicitly
+set `config.policy.unknownAsset` to `"allow"` and configure the matching contract
+and network budget. This permits parsed unknown assets; the default USDC budgets
+do not cap them.
+
 The wrapper closes only a ledger it created. For an injected ledger, close all
 wrappers after their requests finish, then let the owner close the ledger.
 Reusing a closed wrapper passes requests directly to the original transport
 without metering. Do not use a closed wrapper for later payments.
+
+Version 0.2.0 upgrades existing ledgers to schema version 2 when opening them.
+Source events and outcomes remain unchanged; the added budget index is rebuilt
+from those records. Upgrade all writers together. Older 0.1.x clients cannot
+reopen a migrated database. `ledger.rebuildCache()` repairs the derived index
+from the append-only log inside a transaction.
 
 ## Fetch behavior and limits
 
@@ -159,6 +172,9 @@ without metering. Do not use a closed wrapper for later payments.
   returns a 402 JSON response with `error: "blocked_by_taximeter"`, `reason`,
   `budget`, `spent`, and `remaining`, and records a blocked event. The enclosing
   payment client can apply its own response handling or throw its own error.
+- A parsed unknown asset is denied by default with `reason: "unknown_asset"`,
+  `budget: null`, `spent: "0"`, and `remaining: null`. Unsupported or unparseable
+  payment formats still pass through with a diagnostic.
 - If the transport throws after forwarding an authorization, the original
   error is rethrown and the authorization remains reserved with unknown
   settlement. Missing settlement evidence has the same conservative treatment.
@@ -171,7 +187,7 @@ without metering. Do not use a closed wrapper for later payments.
 The initial adapter meters exact EVM EIP-3009 payments: legacy v1 on Base and
 Base Sepolia, and v2 with EVM CAIP-2 networks. Permit2, ERC-7710, other schemes,
 and other rails remain unmetered. Known Base/Base Sepolia USDC uses six decimal
-places; unknown tokens remain exact atomic units. Budgets and totals are
+places; explicitly allowed unknown tokens remain exact atomic units. Budgets and totals are
 separate for every network and asset. See
 [protocol notes](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md) for
 wire formats, challenge correlation, idempotency, and settlement rules.
