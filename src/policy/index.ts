@@ -32,7 +32,7 @@ export function spentForBudget(
   let spent = 0n;
   for (const event of deriveEvents(events)) {
     if (!countsAsSpend(event) || assetKey(event) !== assetKey(proposed)) continue;
-    const ts = Date.parse(event.ts);
+    const ts = Date.parse(event.attemptedAt ?? event.ts);
     if (ts < start || ts > now) continue;
     if (scope === "perTask" && event.taskId !== proposed.taskId) continue;
     if (scope === "perAgent" && event.agentId !== proposed.agentId) continue;
@@ -68,10 +68,9 @@ export function evaluate(
   )
     return deny("max_single_payment", policy.maxSinglePayment);
 
-  const alreadyReserved = events.some(
+  const reserved = events.find(
     (event) => event.paymentKey === proposed.paymentKey && countsAsSpend(event),
   );
-  const increment = alreadyReserved ? 0n : BigInt(proposed.amount);
   for (const scope of ["perTask", "perAgent", "global"] as const) {
     const budget = config.budgets[scope];
     if (
@@ -81,6 +80,13 @@ export function evaluate(
     )
       continue;
     const spent = spentForBudget(proposed, events, budget, scope, now);
+    const reservedTime = reserved ? Date.parse(reserved.attemptedAt ?? reserved.ts) : -Infinity;
+    const inWindow =
+      reservedTime <= now && (!budget.window || reservedTime >= now - windows[budget.window]);
+    const increment =
+      reserved && (reserved.settlementStatus === "confirmed" || inWindow)
+        ? 0n
+        : BigInt(proposed.amount);
     if (BigInt(spent) + increment > BigInt(budget.amount)) {
       const reason =
         scope === "perTask"
