@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Total } from "../src/ledger/derive";
 import { type DashboardState, dashboardStateSchema } from "../src/server/schema";
+import { version } from "../src/version";
 import { Dashboard } from "../ui/App";
 import { amountText, assetIdentity, hourlySeries, percentOf } from "../ui/helpers";
 import { event } from "./helpers";
@@ -23,7 +24,7 @@ function total(overrides: Partial<Total> = {}): Total {
 
 function state(overrides: Partial<DashboardState> = {}): DashboardState {
   return dashboardStateSchema.parse({
-    version: "0.1.0",
+    version,
     generatedAt: "2026-09-08T12:00:00.000Z",
     totalEvents: 0,
     blockedEvents: 0,

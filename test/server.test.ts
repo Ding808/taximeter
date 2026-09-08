@@ -12,6 +12,7 @@ import type { PaymentEvent } from "../src/model";
 import { createDashboard } from "../src/server/index";
 import { dashboardStateSchema } from "../src/server/schema";
 import { dashboardState } from "../src/server/state";
+import { version } from "../src/version";
 import { listen, stop } from "./fixtures/upstream";
 import { event } from "./helpers";
 
@@ -115,7 +116,7 @@ describe("local read-only dashboard API", () => {
       expect(response.headers["content-type"]).toContain("application/json");
       const state = dashboardStateSchema.parse(JSON.parse(response.body.toString("utf8")));
       expect(state).toMatchObject({
-        version: "0.1.0",
+        version,
         totalEvents: 0,
         blockedEvents: 0,
         unknownEvents: 0,
