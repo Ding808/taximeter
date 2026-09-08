@@ -92,3 +92,55 @@ test("declined HTTP upgrades preserve response bytes and content headers", async
     ledger.close();
   }
 });
+
+test("interrupted declined upgrades close the downstream response without hanging", async () => {
+  const upstream = createServer();
+  upstream.on("upgrade", (_request, socket) =>
+    socket.end("HTTP/1.1 403 Forbidden\r\nContent-Length: 20\r\nConnection: close\r\n\r\nshort"),
+  );
+  const upstreamPort = await listen(upstream);
+  const ledger = new Ledger(":memory:");
+  const proxy = createProxy({ ledger, config: parseConfig() });
+  const port = await listen(proxy);
+  let cancel: (() => void) | undefined;
+  try {
+    const result = await new Promise<string>((resolve, reject) => {
+      const timer = setTimeout(() => resolve("hung"), 1000);
+      const req = request(
+        {
+          host: "127.0.0.1",
+          port,
+          path: `http://127.0.0.1:${upstreamPort}/stream`,
+          headers: { Connection: "Upgrade", Upgrade: "fixture" },
+        },
+        (response) => {
+          response.resume();
+          response.on("aborted", () => {
+            clearTimeout(timer);
+            resolve("aborted");
+          });
+          response.on("error", () => {});
+          response.on("end", () => {
+            clearTimeout(timer);
+            resolve("ended");
+          });
+        },
+      );
+      cancel = () => {
+        clearTimeout(timer);
+        req.destroy();
+      };
+      req.on("error", (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      req.end();
+    });
+    expect(result).toBe("aborted");
+  } finally {
+    cancel?.();
+    await closeProxy(proxy);
+    await stop(upstream);
+    ledger.close();
+  }
+});

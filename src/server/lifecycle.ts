@@ -1,10 +1,11 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { createServer, type Server } from "node:http";
+import type { Server } from "node:http";
 import { z } from "zod";
 import type { TaximeterConfig } from "../config";
 import { expandPath } from "../config/io";
 import { Ledger } from "../ledger/store";
 import { closeProxy, createProxy } from "../proxy";
+import { createDashboard } from "./index";
 
 export async function listenLocal(server: Server, port: number): Promise<number> {
   await new Promise<void>((resolve, reject) => {
@@ -45,7 +46,7 @@ export function acquireLock(db: string): () => void {
 }
 
 export async function startServices(input: TaximeterConfig) {
-  const config = { ...input, db: expandPath(input.db) };
+  const config = { ...input, ports: { ...input.ports }, db: expandPath(input.db) };
   assertStopped(config.db);
   const ledger = new Ledger(config.db);
   let release: () => void;
@@ -56,17 +57,10 @@ export async function startServices(input: TaximeterConfig) {
     throw error;
   }
   const proxy = createProxy({ ledger, config });
-  const dashboard = createServer((_request, response) => {
-    response.writeHead(200, {
-      "Content-Type": "text/html; charset=utf-8",
-      "Content-Security-Policy": "default-src 'none'",
-    });
-    response.end(
-      "<!doctype html><title>Taximeter</title><h1>Taximeter is running</h1><p>Use taximeter report to inspect the local ledger.</p>",
-    );
-  });
+  const dashboard = createDashboard({ ledger, config });
   try {
     const proxyPort = await listenLocal(proxy, config.ports.proxy);
+    config.ports.proxy = proxyPort;
     const dashboardPort = await listenLocal(dashboard, config.ports.dashboard);
     let closed = false;
     return {

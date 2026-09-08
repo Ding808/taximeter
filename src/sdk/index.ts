@@ -121,7 +121,13 @@ export function withMeter(
     const responseHeaders = Object.fromEntries(response.headers);
     const reply = { status: response.status, headers: responseHeaders };
     meter.complete(intake, reply);
-    if (response.status === 402) {
+    if (response.redirected)
+      meter.diagnose(
+        "parse_failed",
+        url,
+        "The supplied transport followed a redirect internally; intermediate requests were not visible to Taximeter policy. Use redirect: 'error' or expose each hop when host policies must apply to every destination.",
+      );
+    if (response.status === 402 && !response.redirected) {
       try {
         const body = response.headers.has("payment-required")
           ? undefined

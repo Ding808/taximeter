@@ -57,21 +57,40 @@ function forwardingHeaders(message: IncomingMessage, host?: string, upgrade = fa
   return result;
 }
 
-function targetFor(request: IncomingMessage, config: TaximeterConfig): URL {
-  const path = z.string().min(1).parse(request.url);
-  return new URL(
+type Target = { url: URL; path: string; resource: string };
+
+function targetFor(request: IncomingMessage, config: TaximeterConfig): Target {
+  const reference = z.string().min(1).parse(request.url);
+  const absolute = /^https?:\/\//i.test(reference);
+  const url = new URL(
     httpUrlSchema.parse(
-      /^https?:\/\//i.test(path)
-        ? path
+      absolute
+        ? reference
         : config.upstream
-          ? new URL(path, config.upstream).href
+          ? reference.startsWith("/")
+            ? `${new URL(config.upstream).origin}${reference}`
+            : new URL(reference, config.upstream).href
           : "",
     ),
   );
+  // URL validates the routing authority, but its pathname normalizes dot segments.
+  // Forward the original path/query explicitly, including escapes and an empty query.
+  // Leading double slashes are still an origin-form path, never a new authority.
+  const suffix = absolute
+    ? reference.replace(/^https?:\/\/[^/?#]*/i, "")
+    : reference.startsWith("/")
+      ? reference
+      : `${url.pathname}${url.search}`;
+  const withoutFragment = suffix.split("#", 1)[0] ?? "";
+  const path = z
+    .string()
+    .min(1)
+    .parse(withoutFragment.startsWith("/") ? withoutFragment : `/${withoutFragment}`);
+  return { url, path, resource: httpUrlSchema.parse(`${url.origin}${path}`) };
 }
-function wire(request: IncomingMessage, target: URL): WireRequest {
+function wire(request: IncomingMessage, target: Target): WireRequest {
   return {
-    url: target.href,
+    url: target.resource,
     method: z.string().parse(request.method),
     headers: normalizedHeaders(request.headers),
   };
@@ -85,7 +104,7 @@ export function createProxy(options: { ledger: Ledger; config: TaximeterConfig }
   const config = parseConfig(options.config);
   const meter = new Meter(options.ledger, config);
   const server = createServer({ requestTimeout: 0 }, (request, response) => {
-    let target: URL;
+    let target: Target;
     try {
       target = targetFor(request, config);
     } catch {
@@ -103,10 +122,14 @@ export function createProxy(options: { ledger: Ledger; config: TaximeterConfig }
       request.resume();
       return;
     }
-    const transport = target.protocol === "https:" ? httpsRequest : httpRequest;
+    const transport = target.url.protocol === "https:" ? httpsRequest : httpRequest;
     const outgoing = transport(
-      target,
-      { method: request.method, headers: forwardingHeaders(request, target.host) },
+      target.url,
+      {
+        method: request.method,
+        path: target.path,
+        headers: forwardingHeaders(request, target.url.host),
+      },
       (reply) => {
         const headers = normalizedHeaders(reply.headers);
         const status = reply.statusCode ?? 502;
@@ -205,12 +228,13 @@ export function createProxy(options: { ledger: Ledger; config: TaximeterConfig }
       }
       meter.diagnose(
         "parse_failed",
-        target.href,
+        target.resource,
         "HTTP upgrade forwarded; subsequent stream frames are unmetered.",
       );
-      const outgoing = (target.protocol === "https:" ? httpsRequest : httpRequest)(target, {
+      const outgoing = (target.url.protocol === "https:" ? httpsRequest : httpRequest)(target.url, {
         method: request.method,
-        headers: forwardingHeaders(request, target.host, true),
+        path: target.path,
+        headers: forwardingHeaders(request, target.url.host, true),
       });
       const handshake = (reply: IncomingMessage, stream: Duplex, responseHead: Buffer) => {
         meter.complete(intake, {
@@ -247,6 +271,8 @@ export function createProxy(options: { ledger: Ledger; config: TaximeterConfig }
           response.addTrailers(reply.trailers);
           response.end();
         });
+        reply.on("error", () => response.destroy());
+        reply.on("aborted", () => response.destroy());
         reply.pipe(response, { end: false });
       });
       outgoing.on("error", () => {

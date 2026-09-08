@@ -1,4 +1,4 @@
-import { type IncomingHttpHeaders, request, type Server } from "node:http";
+import { createServer, type IncomingHttpHeaders, request, type Server } from "node:http";
 import { createServer as createTcpServer, type Socket } from "node:net";
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
@@ -6,7 +6,7 @@ import { parseConfig } from "../src/config";
 import { totals } from "../src/ledger/derive";
 import { Ledger } from "../src/ledger/store";
 import { blockedBodySchema } from "../src/model";
-import { createProxy } from "../src/proxy/index";
+import { closeProxy, createProxy } from "../src/proxy/index";
 import { fixtureUpstream, listen, opaqueBody, paymentHeader, stop } from "./fixtures/upstream";
 
 type Reply = {
@@ -90,6 +90,143 @@ async function withProxy(
 const cap = (amount: string) => ({ budgets: { global: { amount, asset: "USDC" } } });
 
 describe("native HTTP payment proxy", () => {
+  test.each([false, true])(
+    "raw escaped dot segments survive forwarding with explicit upstream %s",
+    async (explicitUpstream) => {
+      await withProxy(
+        async ({ ledger, port, upstream }) => {
+          const path = "/a/%2e%2e/unknown?escaped=%2F%2f&empty=&repeat=1&repeat=2";
+          const response = await throughProxy(
+            port,
+            explicitUpstream ? path : `${upstream.url}${path}`,
+          );
+          expect(response.body).toEqual(opaqueBody);
+          expect(upstream.requests[0]?.url).toBe(path);
+          const paidPath = "/a/%2E%2e/v2?empty";
+          const resource = `${upstream.url}${paidPath}`;
+          const replay = await throughProxy(port, explicitUpstream ? paidPath : resource, {
+            headers: paymentHeader(2, 1, resource),
+          });
+          expect(replay.status).toBe(200);
+          expect(upstream.requests[1]?.url).toBe(paidPath);
+          expect(ledger.view()[0]?.resource).toBe(resource);
+        },
+        {},
+        explicitUpstream,
+      );
+    },
+  );
+
+  test("origin-form upstream requests replace a configured base path without normalization", async () => {
+    const seen: string[] = [];
+    const upstream = createServer((request, response) => {
+      seen.push(z.string().parse(request.url));
+      response.end("ok");
+    });
+    const upstreamPort = await listen(upstream);
+    const ledger = new Ledger(":memory:");
+    const proxy = createProxy({
+      ledger,
+      config: parseConfig({ upstream: `http://127.0.0.1:${upstreamPort}/api/base?old=1` }),
+    });
+    const port = await listen(proxy);
+    try {
+      for (const path of ["/root/a/../data?", "/?new=%2F"])
+        expect((await throughProxy(port, path)).status).toBe(200);
+      expect(seen).toEqual(["/root/a/../data?", "/?new=%2F"]);
+    } finally {
+      await closeProxy(proxy);
+      await stop(upstream);
+      ledger.close();
+    }
+  });
+
+  test("double-slash origin-form paths stay on the configured upstream", async () => {
+    let otherRequests = 0;
+    const other = createServer((_request, response) => {
+      otherRequests += 1;
+      response.end("wrong upstream");
+    });
+    const otherPort = await listen(other);
+    const upstream = createServer((request, response) => response.end(request.url));
+    const upstreamPort = await listen(upstream);
+    const ledger = new Ledger(":memory:");
+    const proxy = createProxy({
+      ledger,
+      config: parseConfig({ upstream: `http://127.0.0.1:${upstreamPort}/prefix/` }),
+    });
+    const port = await listen(proxy);
+    const path = `//127.0.0.1:${otherPort}/other-host/path?literal=%2F`;
+    try {
+      const response = await throughProxy(port, path);
+      expect(response.status).toBe(200);
+      expect(response.body.toString()).toBe(path);
+      expect(otherRequests).toBe(0);
+    } finally {
+      await closeProxy(proxy);
+      await stop(upstream);
+      await stop(other);
+      ledger.close();
+    }
+  });
+
+  test("raw paths retain host policy checks against the routed authority", async () => {
+    await withProxy(
+      async ({ ledger, port, upstream }) => {
+        const resource = `${upstream.url}/a/%2e%2e/v2?literal=%2F`;
+        const response = await throughProxy(port, resource, {
+          headers: { ...paymentHeader(2, 1, resource), Host: "unrelated.example" },
+        });
+        expect(response.status).toBe(402);
+        expect(blockedBodySchema.parse(JSON.parse(response.body.toString()))).toMatchObject({
+          error: "blocked_by_taximeter",
+          reason: "host_denied",
+        });
+        expect(upstream.requests).toEqual([]);
+        expect(ledger.view()[0]).toMatchObject({
+          status: "blocked",
+          resource,
+          host: "127.0.0.1",
+        });
+      },
+      { policy: { denyHosts: ["127.0.0.1"] } },
+    );
+  });
+
+  test.each([false, true])(
+    "upgrade requests retain raw paths with explicit upstream %s",
+    async (explicitUpstream) => {
+      const upstream = createServer();
+      const path = "/stream/a/%2e%2e/data?literal=%2f&empty=";
+      upstream.on("upgrade", (request, socket) => {
+        const body = z.string().parse(request.url);
+        socket.end(
+          `HTTP/1.1 403 Forbidden\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`,
+        );
+      });
+      const upstreamPort = await listen(upstream);
+      const origin = `http://127.0.0.1:${upstreamPort}`;
+      const ledger = new Ledger(":memory:");
+      const proxy = createProxy({
+        ledger,
+        config: parseConfig(explicitUpstream ? { upstream: `${origin}/prefix/` } : {}),
+      });
+      const port = await listen(proxy);
+      try {
+        const response = await throughProxy(port, explicitUpstream ? path : `${origin}${path}`, {
+          headers: { Connection: "Upgrade", Upgrade: "fixture" },
+        });
+        expect(response.status).toBe(403);
+        expect(response.body.toString()).toBe(path);
+        expect(ledger.diagnostics()[0]?.resource).toBe(`${origin}${path}`);
+      } finally {
+        await closeProxy(proxy);
+        await stop(upstream);
+        ledger.close();
+      }
+    },
+  );
+
   test.each([1, 2] as const)(
     "100 simulated x402 v%i payments produce the exact integer total 700",
     async (version) => {

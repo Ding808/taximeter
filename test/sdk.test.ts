@@ -1,10 +1,18 @@
+import { createServer } from "node:http";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { parseConfig } from "../src/config";
 import { totals } from "../src/ledger/derive";
 import { Ledger } from "../src/ledger/store";
 import { blockedBodySchema } from "../src/model";
 import { withMeter } from "../src/sdk/index";
-import { encode, fixturePayer, fixtureUpstream, paymentHeader } from "./fixtures/upstream";
+import {
+  encode,
+  fixturePayer,
+  fixtureUpstream,
+  listen,
+  paymentHeader,
+  stop,
+} from "./fixtures/upstream";
 
 const RESOURCE = "https://api.example.test/data";
 const cleanup: (() => void | Promise<void>)[] = [];
@@ -248,6 +256,71 @@ describe("SDK preserves fetch request and response behavior", () => {
 });
 
 describe("SDK unknown traffic observation is bounded and transparent", () => {
+  test("native fetch redirects remain transparent and diagnose policy visibility limits", async () => {
+    const destination = await fixtureUpstream();
+    cleanup.push(() => destination.close());
+    const redirected = `${destination.url.replace("127.0.0.1", "localhost")}/v2`;
+    const origin = createServer((_request, response) => {
+      response.writeHead(302, { Location: redirected });
+      response.end();
+    });
+    const port = await listen(origin);
+    cleanup.push(() => stop(origin));
+    const url = `http://127.0.0.1:${port}/payment`;
+    const store = ledger();
+    let forwarded: RequestInit | undefined;
+    let original: Response | undefined;
+    const transport: typeof globalThis.fetch = async (input, init) => {
+      forwarded = init;
+      original = await fetch(input, init);
+      return original;
+    };
+    const metered = withMeter(transport, {
+      ledger: store,
+      config: parseConfig(cap(), { policy: { denyHosts: ["localhost"] } }),
+    });
+    const init: RequestInit = { headers: paymentHeader(2, 1, url), redirect: "follow" };
+    const response = await metered(url, init);
+    expect(response).toBe(original);
+    expect(forwarded).toBe(init);
+    expect(response.redirected).toBe(true);
+    expect(response.url).toBe(redirected);
+    expect(response.status).toBe(200);
+    await response.arrayBuffer();
+    // Native fetch's hidden hop reaches this host before the wrapper sees the response.
+    expect(destination.paid()).toBe(1);
+    expect(store.view()[0]?.host).toBe("127.0.0.1");
+    expect(store.diagnostics().some((entry) => entry.message.includes("redirect internally"))).toBe(
+      true,
+    );
+  });
+
+  test("redirected legacy challenges are not correlated to the initial request URL", async () => {
+    const destination = await fixtureUpstream();
+    cleanup.push(() => destination.close());
+    const origin = createServer((_request, response) => {
+      response.writeHead(302, { Location: `${destination.url}/v1` });
+      response.end();
+    });
+    const port = await listen(origin);
+    cleanup.push(() => stop(origin));
+    const url = `http://127.0.0.1:${port}/payment`;
+    const store = ledger();
+    const metered = withMeter(fetch, { ledger: store, config: cap() });
+    const challenge = await metered(url);
+    expect(challenge.redirected).toBe(true);
+    expect(challenge.status).toBe(402);
+    expect(await challenge.json()).toMatchObject({ x402Version: 1 });
+    const replay = await metered(url, { headers: paymentHeader(1, 1, url) });
+    expect(replay.status).toBe(200);
+    await replay.arrayBuffer();
+    expect(destination.paid()).toBe(1);
+    expect(store.events()).toEqual([]);
+    expect(store.diagnostics().some((entry) => entry.message.includes("redirect internally"))).toBe(
+      true,
+    );
+  });
+
   test("a malformed payment header is forwarded and diagnosed", async () => {
     const store = ledger();
     let forwardedHeader: string | null = null;
