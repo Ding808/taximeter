@@ -1133,3 +1133,71 @@ verification streams one payment and its outcomes at a time, checks exact totals
 all settlements and attribution, the next payment's exact rejection body, zero
 diagnostics, and every cache partition root. Cache statistics are collected
 **after** timing to avoid a full index scan warming the measured reads.
+
+### 500,000-payment experiment
+
+Measured sequentially on the same Windows x64 / Node 24.13.0 machine, using the
+built 0.2.1 entry, default SQLite settings, one fresh database per case, and 100
+timed payments per size. History covers 22 hours and all three 24-hour budgets
+are active. There are no untimed warm-up payments or pre-timing cache scans;
+seeding naturally touches the database and the OS file cache is not cleared.
+Median and nearest-rank p95 include the first payment. Some independent checks
+ran during seeding; heavy local work was paused during each measured phase.
+
+Historical fixtures are already-confirmed payment events appended in one outer
+transaction; they have no historical attempt/outcome rows. Each timed payment
+does create its reservation and confirmed outcome. This matches the prior
+benchmark but means database sizes are for this fixture, not a storage forecast
+for live traffic with retries and settlement history. Task and agent labels cycle
+independently: 1,000 tasks and 100 agents create 1,101 cache partitions including
+global, rather than 100,000 task-agent combinations.
+
+With one task and one agent (three cache partitions including the global scope):
+
+| Historical payments | Median / p95 (ms) | First payment (ms) | Cache prefix rows | Closed database bytes |
+| --- | --- | --- | --- | --- |
+| 50,000 | 3.378 / 4.382 | 13.889 | 512,310 | 286,093,312 |
+| 500,000 | 3.327 / 4.209 | 9.172 | 3,990,435 | 2,739,785,728 |
+
+Seeding took 44.634 and 515.583 seconds respectively; reopening took 2.911 and
+2.063 ms. Final streamed source verification took 0.573 and 5.651 seconds and
+confirmed exact totals of `"350700"` and `"3500700"`, including the 100 measured
+payments. Cache row counts and database sizes are measured after those payments
+and the next payment's rejection. Source verification and cache statistics are
+outside the payment timings.
+
+With 1,000 tasks and 100 agents (1,101 populated cache partitions):
+
+| Historical payments | Median / p95 (ms) | First payment (ms) | Cache prefix rows | Closed database bytes |
+| --- | --- | --- | --- | --- |
+| 50,000 | 3.763 / 4.881 | 14.194 | 748,372 | 318,271,488 |
+| 500,000 | 3.994 / 7.624 | 7.624 | 6,055,344 | 2,996,031,488 |
+
+Seeding took 52.719 and 678.611 seconds; reopening took 2.959 and 2.679 ms.
+Streamed source verification took 0.585 and 8.358 seconds. Both cases passed
+the same exact-amount, settlement, attribution, rejection, and cache checks.
+
+At ten times the history, the single-group median stayed near 3.3 ms. The
+many-group median increased about 6%, while its p95 increased from 4.881 to
+7.624 ms (about 56%). This supports bounded payment lookup in these samples,
+but does not establish constant tail latency: prefix growth and larger working
+sets still have costs. Each row is only one 100-payment batch; repeated batches
+and concurrent writers are the next useful measurements. Full reports, exports,
+and dashboard replay remain outside this benchmark.
+
+The complete machine-readable results are committed with the harness:
+[single-group results](benchmarks/ledger-0.2.1-single.jsonl) and
+[many-group results](benchmarks/ledger-0.2.1-many.jsonl). They include runtimes,
+timing boundaries, sizes, seed/verification times, and populated partitions.
+Reproduce using the same flags (`--temp-root` may be changed to an absolute local
+directory):
+
+```sh
+npm run build
+node scripts/benchmark-ledger.mjs --counts 50000,500000 --payments 100 --batches 1 --progress-every 5000 --task-partitions 1 --agent-partitions 1
+node scripts/benchmark-ledger.mjs --counts 50000,500000 --payments 100 --batches 1 --progress-every 5000 --task-partitions 1000 --agent-partitions 100
+```
+
+No new full-scale 0.1.2 measurements were run for this patch; its compatibility
+with the extended harness was checked on a small fixture. The 0.1.2 comparison
+in the preceding release section remains the earlier measured baseline.
