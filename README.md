@@ -51,7 +51,7 @@ Open a terminal in this source checkout, with Node 20+ and npm installed.
 You should now see:
 
 ```text
-Taximeter 0.2.0
+Taximeter 0.2.1
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
@@ -141,9 +141,20 @@ as text to prevent a spreadsheet application from rounding them.
 ## Configuration
 
 When upgrading from 0.1.x, upgrade all writers together. Opening an existing
-ledger builds the new budget index once and upgrades its schema; the source log
-is preserved. Older 0.1.x clients cannot reopen that migrated database. Parsed
-unknown assets now require an explicit opt-in as described below.
+ledger prints `Migrating ledger…`, saves a standalone schema-1 backup beside it
+at `<database>.backup-v1-<unique suffix>/ledger.db`, and prints the backup path
+before building the budget index. The backup includes committed WAL records;
+if it cannot be completed, the upgrade stops. Large ledgers take longer on this
+first open. Fresh databases and already-upgraded ledgers do not create backups.
+
+The source log is preserved, but older 0.1.x clients cannot reopen the upgraded
+database. To roll back, stop all CLI and SDK writers, copy the saved `ledger.db`
+to a **new database path**, and start 0.1.x with `--db` pointing there. Keep the
+upgraded database: the backup does not contain payments made after migration.
+Backups are retained until you remove them; a `ledger.partial.db` file means the
+backup did not finish and must not be used for rollback. Progress goes to stderr,
+so JSON report/export output stays machine-readable. Parsed unknown assets now
+require an explicit opt-in as described below.
 
 No file is required. Start from [the example](taximeter.config.example.json) when
 needed. Precedence, highest first: flags, environment, explicit `--config` file,
