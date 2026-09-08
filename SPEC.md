@@ -1,24 +1,17 @@
-# Build Prompt — `taximeter`
+# Taximeter specification
 
-> Paste everything below the line into GPT‑6 Astra (Codex). It is written as a single
-> self‑contained brief. Nothing above the line is part of the prompt.
->
-> Name verified available on the npm registry on 2026‑09‑06.
-
----
-
-You are a senior TypeScript engineer and product designer building a new open‑source
-project from scratch. Build it completely, in one working session, to a standard where a
-stranger can `npx` it and get value in under 30 seconds. Work autonomously: make
-reasonable decisions, write them down, and keep going. Do not stop to ask me questions
-unless a decision is genuinely irreversible.
+Taximeter is an open-source TypeScript meter and ledger for agent payments.
+This specification defines the product, architecture, engineering standards, and
+release acceptance criteria. The quickstart should provide useful results in
+under 30 seconds. Implementation decisions and protocol corrections are recorded
+in `DECISIONS.md` and `SPEC-NOTES.md`.
 
 ---
 
-## 0. Before you write any code — verify the protocol
+## 0. Protocol verification
 
-My description of the x402 protocol below is a **summary written by someone else and it may
-be out of date or wrong**. Before implementing anything, fetch and read the primary sources:
+The x402 descriptions below are a summary. Protocol details must be checked against
+the primary sources before implementation:
 
 - `https://github.com/coinbase/x402` — README, `specs/x402-specification-v2.md`,
   `specs/schemes/exact/scheme_exact_evm.md`
@@ -294,10 +287,8 @@ how to point an agent at the proxy — never a blank screen.
 
 ## 6. The README
 
-Treat the README as the product's landing page, because it is. Research says **34.7% of
-developers abandon a tool when setup looks hard, and 73% want to try it in minutes rather
-than read docs first** — so the README is optimized for time‑to‑first‑run, not for
-completeness.
+The README is the product's landing page. Prioritize a working quickstart and a
+short path to the first useful result, with detailed reference material in the docs.
 
 Structure, in this order:
 
@@ -395,8 +386,7 @@ taximeter.config.json
 .env.*
 !.env.example
 
-# agent / tooling session logs
-codex-session.log
+# development logs
 *.log
 
 # editors & OS
@@ -473,17 +463,12 @@ Verify each one and paste the evidence into a `VERIFICATION.md`.
 
 ---
 
-## 10. How to handle uncertainty
+## 10. Resolving uncertainty
 
-- **Protocol detail unclear?** Read the primary source. Still unclear? Implement the
-  narrowest interpretation, guard it, and note it in `SPEC-NOTES.md`.
-- **Product decision unclear?** Choose the option that keeps the tool from breaking the
-  agent, and write the choice into `DECISIONS.md` with one line of reasoning.
-- **Something in this brief is wrong or impossible?** Say so explicitly in your final
-  summary, do the sensible thing, and keep building. Do not silently work around it.
-- **Running out of budget?** Ship steps 1–11 complete and correct rather than all 14
-  half‑done. A working CLI with no dashboard is a real tool; a pretty dashboard over a
-  broken ledger is not.
-
-When you are finished, output: what you built, what you deviated from, what is untested,
-and the three things you would do next.
+- Resolve protocol ambiguity against the primary source. Support the narrowest
+  verified interpretation and document its limits in `SPEC-NOTES.md`.
+- Product decisions must preserve the agent's traffic. Record each material
+  decision and its rationale in `DECISIONS.md`.
+- Document unsupported requirements and specification corrections explicitly.
+- Delivery priorities favor correct CLI behavior, ledger arithmetic, and traffic
+  preservation before dashboard polish.
