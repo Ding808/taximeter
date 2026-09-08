@@ -1,5 +1,11 @@
 # Taximeter
 
+## 0.1.2
+
+### Patch Changes
+
+- Exclude development specifications, verification transcripts, design decisions, contribution files, and recording sources from the npm package. Keep the CLI, SDK, dashboard, usage documentation, demo image, license, security guidance, changelog, and example configuration. Link to repository-only documentation from packaged guides.
+
 ## 0.1.1
 
 ### Patch Changes
