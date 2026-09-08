@@ -28,7 +28,14 @@
     "README.md",
     "LICENSE",
     "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "CHANGELOG.md",
+    "DECISIONS.md",
+    "VERIFICATION.md",
+    "SPEC.md",
     "SPEC-NOTES.md",
+    "taximeter.config.example.json",
     "docs"
   ],
   "scripts": {
@@ -37,6 +44,8 @@
     "format": "biome check --write .",
     "test": "vitest run --coverage",
     "build": "tsup && vite build",
+    "check:package": "node scripts/check-package.mjs",
+    "smoke:package": "node scripts/smoke-package.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "npm run build && changeset publish"

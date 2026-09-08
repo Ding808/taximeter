@@ -21,6 +21,8 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm pack
+      - run: npm run check:package
+      - run: npm run smoke:package
       - name: Require a clean worktree
         shell: bash
         run: test -z "$(git status --porcelain)"
