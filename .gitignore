@@ -1,0 +1,33 @@
+# deps & build
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+# test & coverage
+coverage/
+.nyc_output/
+test-results/
+tmp/
+# package output
+*.tgz
+# local ledger state
+*.db
+*.db-wal
+*.db-shm
+.taximeter/
+taximeter.config.json
+# secrets
+.env*
+!.env.example
+# session logs
+*.log
+# editors & OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*~
