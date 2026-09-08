@@ -1,7 +1,8 @@
 # Release verification
 
-The release passed the clean-checkout audit on `feat/taximeter-v0.1.0`. Public npm publication,
-repository visibility changes, and hosted CI execution are not claimed.
+The release passed the local clean-checkout audit on `feat/taximeter-v0.1.0`.
+The hosted release build also completed; publishing requires npm credentials as
+described below. Public npm publication is not claimed.
 
 ## Behavioral evidence
 
@@ -45,9 +46,9 @@ payment, wallet, facilitator, or chain access was involved.
 Audited source commit: `336e8e85bc61c176ddcea82a17b438d80193978a`. Date: **2026-09-08**.
 Two independent Git clones were created outside the working repository on Windows.
 Node **20.20.2** and **22.23.2** each used npm **11.6.2** and their own native
-SQLite installation. All commands below exited zero. No results were fabricated
-or substituted; the captured standard output and error streams follow below.
-Only line endings and trailing whitespace are normalized for the repository.
+SQLite installation. All audit commands below exited zero. Captured standard output
+and error streams follow below. Machine-specific paths, line endings, and trailing
+whitespace are normalized; command results and diagnostic messages are retained.
 
 The startup harness runs the literal source command from the clean checkout, and
 the literal npx command from a fresh directory containing only the tarball. Each
@@ -74,12 +75,12 @@ errors, and Biome has zero errors and zero warnings.
 
 ### Windows / Node v20.20.2
 
-Clean checkout: `C:\Users\PigeonD\AppData\Local\Temp\taximeter-audit-node20-04Yagr\checkout`.
+Clean checkout: `<TEMP>/taximeter-audit-node20/checkout`.
 
 #### git clone (fresh checkout)
 
 ```text
-Cloning into 'C:\Users\PigeonD\AppData\Local\Temp\taximeter-audit-node20-04Yagr\checkout'...
+Cloning into '<TEMP>/taximeter-audit-node20/checkout'...
 done.
 ```
 
@@ -148,7 +149,7 @@ Exit: 0. Elapsed: 897 ms.
 > vitest run --coverage
 
 
- RUN  v3.2.7 C:/Users/PigeonD/AppData/Local/Temp/taximeter-audit-node20-04Yagr/checkout
+ RUN  v3.2.7 <TEMP>/taximeter-audit-node20/checkout
       Coverage enabled with v8
 
  ✓ test/config.test.ts (19 tests) 18ms
@@ -227,7 +228,7 @@ Exit: 0. Elapsed: 6173 ms.
 CLI Building entry: src/index.ts, src/cli/index.ts
 CLI Using tsconfig: tsconfig.json
 CLI tsup v8.5.1
-CLI Using tsup config: C:\Users\PigeonD\AppData\Local\Temp\taximeter-audit-node20-04Yagr\checkout\tsup.config.ts
+CLI Using tsup config: <TEMP>/taximeter-audit-node20/checkout\tsup.config.ts
 CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
@@ -366,7 +367,7 @@ Exit: 0. Elapsed: 2059 ms.
 > node scripts/smoke-package.mjs --source
 
 Smoke runtime: v20.20.2
-Smoke workspace: C:\Users\PigeonD\AppData\Local\Temp\taximeter-package-smoke-1qzKd4
+Smoke workspace: <TEMP>/taximeter-package-smoke
 PASS: isolated home and npm cache; no Taximeter config file or environment overrides.
 $ node dist/cli/index.js start
 Taximeter 0.1.0
@@ -392,7 +393,7 @@ Exit: 0. Elapsed: 943 ms.
 > node scripts/smoke-package.mjs
 
 Smoke runtime: v20.20.2
-Smoke workspace: C:\Users\PigeonD\AppData\Local\Temp\taximeter-package-smoke-diOLvj
+Smoke workspace: <TEMP>/taximeter-package-smoke
 PASS: isolated home and npm cache; no Taximeter config file or environment overrides.
 $ npx ./taximeter-0.1.0.tgz start
 npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
@@ -420,12 +421,12 @@ Exit: 0. Elapsed: 119 ms. The empty block is the actual empty output.
 
 ### Windows / Node v22.23.2
 
-Clean checkout: `C:\Users\PigeonD\AppData\Local\Temp\taximeter-audit-node22-syqCfV\checkout`.
+Clean checkout: `<TEMP>/taximeter-audit-node22/checkout`.
 
 #### git clone (fresh checkout)
 
 ```text
-Cloning into 'C:\Users\PigeonD\AppData\Local\Temp\taximeter-audit-node22-syqCfV\checkout'...
+Cloning into '<TEMP>/taximeter-audit-node22/checkout'...
 done.
 ```
 
@@ -494,7 +495,7 @@ Exit: 0. Elapsed: 787 ms.
 > vitest run --coverage
 
 
- RUN  v3.2.7 C:/Users/PigeonD/AppData/Local/Temp/taximeter-audit-node22-syqCfV/checkout
+ RUN  v3.2.7 <TEMP>/taximeter-audit-node22/checkout
       Coverage enabled with v8
 
  ✓ test/config.test.ts (19 tests) 16ms
@@ -573,7 +574,7 @@ Exit: 0. Elapsed: 6277 ms.
 CLI Building entry: src/index.ts, src/cli/index.ts
 CLI Using tsconfig: tsconfig.json
 CLI tsup v8.5.1
-CLI Using tsup config: C:\Users\PigeonD\AppData\Local\Temp\taximeter-audit-node22-syqCfV\checkout\tsup.config.ts
+CLI Using tsup config: <TEMP>/taximeter-audit-node22/checkout\tsup.config.ts
 CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
@@ -712,7 +713,7 @@ Exit: 0. Elapsed: 2003 ms.
 > node scripts/smoke-package.mjs --source
 
 Smoke runtime: v22.23.2
-Smoke workspace: C:\Users\PigeonD\AppData\Local\Temp\taximeter-package-smoke-MdtFzf
+Smoke workspace: <TEMP>/taximeter-package-smoke
 PASS: isolated home and npm cache; no Taximeter config file or environment overrides.
 $ node dist/cli/index.js start
 Taximeter 0.1.0
@@ -738,7 +739,7 @@ Exit: 0. Elapsed: 866 ms.
 > node scripts/smoke-package.mjs
 
 Smoke runtime: v22.23.2
-Smoke workspace: C:\Users\PigeonD\AppData\Local\Temp\taximeter-package-smoke-xCvlSY
+Smoke workspace: <TEMP>/taximeter-package-smoke
 PASS: isolated home and npm cache; no Taximeter config file or environment overrides.
 $ npx ./taximeter-0.1.0.tgz start
 npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
@@ -787,7 +788,7 @@ PASS populated-dark-1440: 1440px page width, no external requests
 PASS populated-dark-1440: all six views fit; CSV download works
 PASS populated-dark-390: 390px page width, no external requests
 PASS populated-dark-390: all six views fit; CSV download works
-Screenshots: E:\Taximeter\tmp\dashboard-qa-1788844193213
+Screenshots: <CHECKOUT>/tmp/dashboard-qa
 ```
 
 ## Limits
@@ -795,7 +796,7 @@ Screenshots: E:\Taximeter\tmp\dashboard-qa-1788844193213
 - Fixtures are synthetic protocol envelopes. Genuine wallet/facilitator/on-chain
   interoperability has not been tested.
 - Windows browser checks use Chromium. Other browser engines, a live Linux
-  desktop, and hosted GitHub Actions runs have not been exercised here.
+  desktop, and Linux browser rendering have not been exercised here.
 - Native Windows ConPTY capture and agg encoding were executed for the follow-up
   demo recording documented below. VHS and asciinema command-line recipes have not been run.
 - The npm name remains unpublished. The README's source commands work before
@@ -808,16 +809,14 @@ Screenshots: E:\Taximeter\tmp\dashboard-qa-1788844193213
 All implementation deviations and pending repository-description/public-release
 actions are listed at the top of [SPEC-NOTES.md](SPEC-NOTES.md).
 
-## Follow-up: actual Windows demo recording
+## Windows demo recording
 
-On **2026-09-08**, the user requested downloading the recording tools to E: and
-recording the demo on this computer. `docs/demo.gif` now contains the actual local
-simulation, replacing the initial placeholder shown in the historical package
-audit outputs above. Product source and dependencies did not change.
+On **2026-09-08**, `docs/demo.gif` was recorded from the local simulation, replacing
+the initial placeholder shown in the historical package audit outputs above.
+Product source and dependencies did not change.
 
-The Windows workspace is `E:\Taximeter-Demo`. It contains the original asciicast
-v2 capture, raw terminal output, GIF, MP4, recording helpers, and downloaded tools.
-The helpers use node-pty 1.1.0 to run `cmd.exe` through Windows ConPTY, type
+The source recording is an asciicast v2 capture. node-pty 1.1.0 runs `cmd.exe`
+through Windows ConPTY to type
 `node docs/demo.mjs`, and capture its actual terminal output at 104 columns by 32
 rows. The recorder asserts the block and exact total and requires shell exit 0.
 agg 1.9.0 renders the capture; the existing FFmpeg 9.0.1 creates the MP4.
@@ -831,7 +830,7 @@ The official agg Windows executable's SHA-256 matched:
 Actual capture output:
 
 ```text
-Recorded 52 terminal events over 20 seconds to /E:/Taximeter-Demo/demo.cast
+Recorded 52 terminal events over 20 seconds to <RECORDING>/demo.cast
 Demo assertions passed; command shell exited with status 0.
 ```
 
@@ -913,3 +912,32 @@ Files whitelist honored; no UI source maps, source tree, tests, dependencies, or
 Ledger and policy coverage remained 100% in all four metrics. The final package
 is regenerated after this documentation update and still subject to the enforced
 2,000,000-byte compressed size limit.
+
+## Release authentication checks
+
+The hosted Release job completed the package build, then failed to publish because
+no npm token or OIDC authentication was available. The relevant log output was:
+
+```text
+No NPM_TOKEN or OIDC available - assuming npm is already authenticated
+ENEEDAUTH This command requires you to be logged in to https://registry.npmjs.org
+```
+
+The publish hook now checks for the configured `NPM_TOKEN` and runs an npm identity
+check before building. This hook runs only in Changesets' publishing path, so
+version PR creation still works without npm credentials. Identity validation
+does not certify package write permission or 2FA bypass.
+
+Bash syntax validation and an isolated npm stub exercised all branches without
+registry access or publication. Captured output:
+
+```text
+PASS missing-token: exit 1; npm calls 0
+PASS rejected-token: exit 1; npm calls 1
+PASS accepted-token: exit 0; npm calls 2
+PASS release-failure: exit 42; npm calls 2
+PASS all publishing preflight checks; npm was stubbed and nothing was published.
+```
+
+The repository owner must supply a publishing-capable Actions secret before the
+hosted release can succeed. No live publication is represented by these checks.

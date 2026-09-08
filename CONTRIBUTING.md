@@ -96,5 +96,46 @@ the changelog; `npm run release` builds and runs Changesets publishing. Publishi
 requires maintainer authorization and credentials. The presence of that workflow
 does not mean any package version has already been published.
 
+### npm publishing credentials
+
+The current workflow uses token authentication. Create an npm **granular access
+token** with package **Read and write** permissions and **Bypass two-factor
+authentication** enabled for unattended publishing. Give it permission to publish
+the intended package and an appropriate expiration. Follow the
+[npm token setup instructions](https://docs.npmjs.com/creating-and-viewing-access-tokens/).
+
+For the first publication of a new unscoped package, it cannot yet be selected
+individually in npm's token settings. A temporary bootstrap token needs the
+**All Packages** selection to permit creating it. Replace it with a token limited
+to `taximeter` after the package exists, or use trusted publishing for later releases.
+
+In the repository's **Settings → Secrets and variables → Actions**, add a
+**repository secret** named exactly `NPM_TOKEN`. Use the token as its value.
+An Actions variable or a Dependabot secret will not populate `secrets.NPM_TOKEN`.
+An environment secret needs a matching job environment; this workflow does not
+select one. Organization secrets must grant this repository access. See
+[GitHub's Actions secret instructions](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions).
+
+`changesets/action@v1` configures npm authentication from this secret. Its publish
+hook checks that the secret is present and that npm accepts the credentials
+before building or publishing. This identity check does not prove package write
+permission or 2FA bypass; npm validates those during publication. Version PRs
+can still be prepared without npm credentials. Do not commit a token to `.npmrc`
+or paste one into an issue or chat.
+
+After adding or correcting the secret, rerun the failed Release job. A local
+`npm login` does not authenticate a GitHub-hosted runner. `ENEEDAUTH` combined
+with `No NPM_TOKEN or OIDC available` means the runner received no usable
+authentication; the successful build and dependency-comment warnings do not
+resolve that missing configuration.
+
+Trusted publishing is a separate setup, not enabled by adding `GITHUB_TOKEN`.
+It requires npm-side trust, a supported npm CLI, and `id-token: write` on the
+workflow. The present hook deliberately requires `NPM_TOKEN`; migrate both the
+hook and workflow together when adopting
+[npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
+The package must already exist before trust can be configured; see the
+[npm trust prerequisites](https://docs.npmjs.com/cli/v11/commands/npm-trust/).
+
 Contributions are provided under the project's [MIT license](LICENSE). Follow the
 [code of conduct](CODE_OF_CONDUCT.md) in issues, reviews, and other project spaces.

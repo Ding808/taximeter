@@ -29,7 +29,7 @@ const generated = [
   ".env.local",
   ".env.production.local",
   ".envrc",
-  "codex-session.log",
+  "development-session.log",
   "nested/runtime.log",
   ".DS_Store",
   "Thumbs.db",
