@@ -36,6 +36,15 @@ describe("external input contracts", () => {
   test("keeps values beyond Number precision as strings", () => {
     expect(amountSchema.parse("900719925474099300000001")).toBe("900719925474099300000001");
   });
+  test("partial policy and port layers never reapply defaults over explicit settings", () => {
+    const config = parseConfig(
+      { policy: { maxSinglePayment: "20", denyHosts: ["deny.test"] }, ports: { proxy: 9100 } },
+      { policy: { allowHosts: ["allow.test"] }, ports: { dashboard: 9200 } },
+    );
+    expect(config.policy.maxSinglePayment).toBe("20");
+    expect(config.policy.denyHosts).toEqual(["deny.test"]);
+    expect(config.ports).toEqual({ proxy: 9100, dashboard: 9200 });
+  });
   test.each([
     { privateKey: "secret" },
     { ports: { proxy: -1 } },
