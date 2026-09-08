@@ -53,6 +53,7 @@ const required = [
   ".gitattributes",
   ".gitignore",
   "migrations/001.sql",
+  "migrations/002.sql",
   "test/__snapshots__/export.test.ts.snap",
   ".changeset/README.md",
   ".changeset/config.json",

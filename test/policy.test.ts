@@ -8,6 +8,61 @@ describe("policy (tests written before implementation)", () => {
   test("default policy allows a small recognized payment", () => {
     expect(evaluate(event(), [], parseConfig(), now)).toEqual({ allowed: true });
   });
+  test.each([
+    {
+      asset: "0x0000000000000000000000000000000000000001",
+      assetSymbol: undefined,
+      decimals: 0,
+      decimalsKnown: false,
+    },
+    {
+      asset: "0x0000000000000000000000000000000000000001",
+      assetSymbol: "USDC",
+      decimals: 6,
+      decimalsKnown: true,
+    },
+    { network: "eip155:1", assetSymbol: "USDC", decimalsKnown: true },
+  ])("unknown assets are denied by offline identity despite supplied metadata %j", (patch) => {
+    expect(evaluate(event(patch), [], parseConfig(), now)).toEqual({
+      allowed: false,
+      body: {
+        error: "blocked_by_taximeter",
+        reason: "unknown_asset",
+        budget: null,
+        spent: "0",
+        remaining: null,
+      },
+    });
+  });
+  test.each([
+    ["eip155:8453", "0x833589FCD6EDB6E08F4C7C32D4F71B54BDA02913"],
+    ["eip155:84532", "0x036CBD53842C5426634E7929541EC2318F3DCF7E"],
+  ])("known asset identity is sufficient without event metadata on %s", (network, asset) => {
+    expect(
+      evaluate(
+        event({ network, asset, assetSymbol: undefined, decimals: 0, decimalsKnown: false }),
+        [],
+        parseConfig(),
+        now,
+      ),
+    ).toEqual({ allowed: true });
+  });
+  test("custom token budgets require explicit allow and then enforce exact contract totals", () => {
+    const proposed = event({ asset: "0x0000000000000000000000000000000000000001" });
+    const config = parseConfig({
+      budgets: { global: { amount: "7", asset: proposed.asset, network: proposed.network } },
+    });
+    expect(evaluate(proposed, [], config, now)).toMatchObject({
+      allowed: false,
+      body: { reason: "unknown_asset" },
+    });
+    const allowed = parseConfig(config, { policy: { unknownAsset: "allow" } });
+    expect(evaluate(proposed, [], allowed, now)).toEqual({ allowed: true });
+    expect(evaluate(proposed, [event({ asset: proposed.asset })], allowed, now)).toMatchObject({
+      allowed: false,
+      body: { reason: "global_budget", budget: "7", spent: "7", remaining: "0" },
+    });
+  });
   test("budget permits exactly twenty payments and describes the twenty-first rejection", () => {
     const config = parseConfig({ budgets: { global: { amount: "140" } } });
     const log = Array.from({ length: 20 }, () => event());
@@ -163,17 +218,21 @@ describe("policy (tests written before implementation)", () => {
       ).allowed,
     ).toBe(true);
   });
-  test("unknown tokens cannot forge a USDC ticker to acquire its budget or scale", () => {
+  test("explicitly allowed unknown tokens cannot forge a USDC ticker to acquire its budget or scale", () => {
     const other = event({
       asset: "0x0000000000000000000000000000000000000001",
       amount: "9999999999",
     });
-    expect(evaluate(other, [], parseConfig(), now).allowed).toBe(true);
+    expect(
+      evaluate(other, [], parseConfig({ policy: { unknownAsset: "allow" } }), now).allowed,
+    ).toBe(true);
     expect(
       evaluate(
         other,
         [],
-        parseConfig({ policy: { maxSingleAsset: other.asset, maxSinglePayment: "1" } }),
+        parseConfig({
+          policy: { unknownAsset: "allow", maxSingleAsset: other.asset, maxSinglePayment: "1" },
+        }),
         now,
       ).allowed,
     ).toBe(false);
