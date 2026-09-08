@@ -13,11 +13,11 @@ source quickstart below works today. Requires Node 20 or newer.
 
 ## A 20-second demo
 
-![Demo recording placeholder](docs/demo.gif)
+![Taximeter allows 20 payments and blocks payment 21](docs/demo.gif)
 
-The GIF is an intentional transparent placeholder. [Record the demo](docs/RECORDING.md)
-with the included local simulation: 20 payments pass and payment 21 is blocked.
-It uses synthetic x402 envelopes and never moves money.
+This local recording shows 20 payments passing and payment 21 being blocked at
+an exact total of 140 atomic units. It uses synthetic x402 envelopes and never
+moves money. [Record the demo](docs/RECORDING.md) with the included simulation.
 
 ## Why
 
