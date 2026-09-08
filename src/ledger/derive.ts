@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { amountSchema, type Outcome, type PaymentEvent } from "../model";
+import { integerStringSchema, type Outcome, type PaymentEvent } from "../model";
 
 export const totalSchema = z.object({
   network: z.string(),
@@ -7,9 +7,9 @@ export const totalSchema = z.object({
   assetSymbol: z.string().optional(),
   decimals: z.number().int(),
   decimalsKnown: z.boolean(),
-  amount: amountSchema,
-  confirmedAmount: amountSchema,
-  unknownAmount: amountSchema,
+  amount: integerStringSchema,
+  confirmedAmount: integerStringSchema,
+  unknownAmount: integerStringSchema,
 });
 export type Total = z.infer<typeof totalSchema>;
 export function assetKey(event: Pick<PaymentEvent, "network" | "asset">): string {
