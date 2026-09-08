@@ -4,3 +4,4 @@
 - Pin better-sqlite3 12.8.0: version 13 requires Node 22, while this release promises Node 20 support.
 - ESM only: a second CJS runtime adds packaging complexity without serving the primary CLI or modern fetch integrations.
 - Runtime requests are limited to forwarding traffic and the local dashboard API. Development dependency installation and protocol research are build activities.
+- Biome's automatic configuration migration emitted `preset: none`; corrected it to `recommended` immediately so lint remains a real quality gate.
