@@ -796,8 +796,8 @@ Screenshots: E:\Taximeter\tmp\dashboard-qa-1788844193213
   interoperability has not been tested.
 - Windows browser checks use Chromium. Other browser engines, a live Linux
   desktop, and hosted GitHub Actions runs have not been exercised here.
-- VHS/asciinema encoding is not run; the requested GIF remains an explicitly
-  documented placeholder. The simulation itself is executed.
+- Native Windows ConPTY capture and agg encoding were executed for the follow-up
+  demo recording documented below. VHS and asciinema command-line recipes have not been run.
 - The npm name remains unpublished. The README's source commands work before
   publication; its registry command requires the first public release.
 - Long-running/high-volume ledger performance, disk exhaustion, and OS crash
@@ -807,3 +807,109 @@ Screenshots: E:\Taximeter\tmp\dashboard-qa-1788844193213
 
 All implementation deviations and pending repository-description/public-release
 actions are listed at the top of [SPEC-NOTES.md](SPEC-NOTES.md).
+
+## Follow-up: actual Windows demo recording
+
+On **2026-09-08**, the user requested downloading the recording tools to E: and
+recording the demo on this computer. `docs/demo.gif` now contains the actual local
+simulation, replacing the initial placeholder shown in the historical package
+audit outputs above. Product source and dependencies did not change.
+
+The Windows workspace is `E:\Taximeter-Demo`. It contains the original asciicast
+v2 capture, raw terminal output, GIF, MP4, recording helpers, and downloaded tools.
+The helpers use node-pty 1.1.0 to run `cmd.exe` through Windows ConPTY, type
+`node docs/demo.mjs`, and capture its actual terminal output at 104 columns by 32
+rows. The recorder asserts the block and exact total and requires shell exit 0.
+agg 1.9.0 renders the capture; the existing FFmpeg 9.0.1 creates the MP4.
+
+The official agg Windows executable's SHA-256 matched:
+
+```text
+810BAF5506E74CA65D8ED85BE3DB58791086C8B7B0A17C9018D7FEDE473F0055
+```
+
+Actual capture output:
+
+```text
+Recorded 52 terminal events over 20 seconds to /E:/Taximeter-Demo/demo.cast
+Demo assertions passed; command shell exited with status 0.
+```
+
+The renderer scans Windows fonts and warned about the unrelated `mstmc.ttf`
+font face. The selected Consolas font rendered correctly; beginning, intermediate,
+and final frames were visually inspected. The full block JSON and exact total fit
+together without horizontal wrapping. The final reading pause is explicitly set
+because agg omits trailing no-op output events. No demo output was replaced.
+
+Actual `ffprobe` GIF output:
+
+```json
+{
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+        {
+            "width": 1049,
+            "height": 653,
+            "nb_frames": "42"
+        }
+    ],
+    "format": {
+        "duration": "20.000000",
+        "size": "96519"
+    }
+}
+```
+
+Actual `ffprobe` MP4 output:
+
+```json
+{
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+        {
+            "width": 1050,
+            "height": 654,
+            "nb_frames": "400"
+        }
+    ],
+    "format": {
+        "duration": "20.000000",
+        "size": "188853"
+    }
+}
+```
+
+The GIF copied into `docs/demo.gif` has SHA-256
+`6D98F96ED4C91CA27EA4A786E3B4A142905EDA321112AC97EEEF2075E9C89161`.
+The captured run permits 20 payments, blocks payment 21, returns the documented
+five-field JSON body, and reports exactly `140` atomic units with one blocked
+event. Signatures, responses, and settlement reports remain synthetic.
+
+Follow-up checks passed before appending this evidence. Actual output excerpts:
+
+```text
+> taximeter@0.1.0 lint
+> biome check --error-on-warnings .
+
+Checked 57 files in 39ms. No fixes applied.
+
+> taximeter@0.1.0 check:package
+> node scripts/check-package.mjs
+
+Package verified: taximeter-0.1.0.tgz
+245338 bytes compressed; 644969 bytes unpacked; 25 files.
+Both CLI aliases, ESM entry point, declarations, and prebuilt UI are present.
+26 relative Markdown file links resolve inside the package.
+Files whitelist honored; no UI source maps, source tree, tests, dependencies, or local state.
+
+ Test Files  17 passed (17)
+      Tests  298 passed (298)
+   Start at  01:53:34
+   Duration  2.28s (transform 893ms, setup 0ms, collect 6.12s, tests 4.54s, environment 4ms, prepare 2.68s)
+```
+
+Ledger and policy coverage remained 100% in all four metrics. The final package
+is regenerated after this documentation update and still subject to the enforced
+2,000,000-byte compressed size limit.
