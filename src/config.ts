@@ -46,8 +46,21 @@ export const configPatchSchema = z.strictObject({
       global: budgetSchema.partial().nullable().optional(),
     })
     .optional(),
-  policy: policySchema.partial().optional(),
-  ports: portsSchema.partial().optional(),
+  policy: z
+    .strictObject({
+      allowHosts: z.array(labelSchema).optional(),
+      denyHosts: z.array(labelSchema).optional(),
+      allowPayTo: z.array(labelSchema).optional(),
+      maxSinglePayment: amountSchema.nullable().optional(),
+      maxSingleAsset: labelSchema.optional(),
+    })
+    .optional(),
+  ports: z
+    .strictObject({
+      proxy: z.number().int().min(0).max(65535).optional(),
+      dashboard: z.number().int().min(0).max(65535).optional(),
+    })
+    .optional(),
   db: z.string().min(1).optional(),
   upstream: httpUrlSchema.optional(),
 });

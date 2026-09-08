@@ -6,3 +6,7 @@
 - Runtime requests are limited to forwarding traffic and the local dashboard API. Development dependency installation and protocol research are build activities.
 - Biome's automatic configuration migration emitted `preset: none`; corrected it to `recommended` immediately so lint remains a real quality gate.
 - Initial dependency audit found advisories in uuid 11.1.0 and tsup's esbuild 0.27.x. Pin uuid 11.1.1 and override tsup's esbuild to 0.28.1; validate with the full suite and build. Keep Changesets 2.x for Node 20 compatibility.
+- SQLite adds append-only `outcomes` and `diagnostics` tables beside `events`; this preserves original payment authorizations while recording settlement uncertainty and parser diagnostics. The migration is bundled as text from the tracked SQL source.
+- Idempotency binds the network/asset/payer/nonce identity to immutable authorization details; conflicting authorizations receive separate conservative reservations rather than bypassing policy through nonce reuse.
+- Zod 4 applies inner defaults even through `.partial()`. Configuration patch schemas therefore have no defaults; a regression test verifies later layers cannot reset earlier sibling options.
+- Independent ledger tests initially expected checksum-case output and `settlement_unknown: true` on blocked rows. Correct those expectations: EVM identities are canonical lowercase, and a replay blocked before forwarding has no uncertain settlement. Exact-value and deduplication assertions remain intact.

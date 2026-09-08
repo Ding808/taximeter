@@ -1,15 +1,20 @@
 import { z } from "zod";
-import { amountSchema, httpUrlSchema } from "../model";
 
 const metadata = z.record(z.string(), z.unknown()).nullish();
 const text = z.string().nullish();
+// Wire integers may have leading zeros; canonicalize only the parsed copy.
+export const wireAmountSchema = z
+  .string()
+  .max(256)
+  .regex(/^[0-9]+$/)
+  .transform((value) => BigInt(value).toString());
 export const addressSchema = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 export const authorizationSchema = z.looseObject({
   from: addressSchema,
   to: addressSchema,
-  value: amountSchema,
-  validAfter: amountSchema,
-  validBefore: amountSchema,
+  value: wireAmountSchema,
+  validAfter: wireAmountSchema,
+  validBefore: wireAmountSchema,
   nonce: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
 });
 export const eip3009Schema = z.looseObject({
@@ -20,7 +25,7 @@ export const eip3009Schema = z.looseObject({
   authorization: authorizationSchema,
 });
 export const resourceSchema = z.looseObject({
-  url: httpUrlSchema,
+  url: z.string().min(1),
   description: text,
   mimeType: text,
 });
@@ -34,13 +39,13 @@ const common = {
 };
 export const requirementsV1Schema = z.looseObject({
   ...common,
-  maxAmountRequired: amountSchema,
-  resource: httpUrlSchema,
+  maxAmountRequired: wireAmountSchema,
+  resource: z.string().min(1),
   description: z.string(),
   mimeType: text,
   outputSchema: metadata,
 });
-export const requirementsV2Schema = z.looseObject({ ...common, amount: amountSchema });
+export const requirementsV2Schema = z.looseObject({ ...common, amount: wireAmountSchema });
 export const requiredV1Schema = z.looseObject({
   x402Version: z.literal(1),
   error: text,
@@ -73,5 +78,5 @@ export const settlementSchema = z.looseObject({
   payer: z.string().optional(),
   errorReason: z.string().optional(),
   errorMessage: z.string().optional(),
-  amount: amountSchema.optional(),
+  amount: wireAmountSchema.optional(),
 });
