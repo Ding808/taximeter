@@ -975,3 +975,23 @@ Files whitelist honored; no UI source maps, source tree, tests, dependencies, or
 
 `node dist/cli/index.js --version` returned `0.1.1`. Subsequent archive sizes include
 this transcript; the same package validation enforces the size limit.
+
+## Version 0.1.2 package contents
+
+Development specifications, decisions, verification transcripts, contribution
+files, and demo recording sources remain tracked in the repository and are
+excluded from the npm archive. The package check permits only the runtime,
+consumer documentation, demo image, license, security policy, changelog, and
+example configuration. Packaged guides link to repository-only documents on GitHub.
+
+On Windows with Node 24.13.0, typecheck and lint passed, all 298 tests passed, and
+ledger and policy coverage remained 100%. The build and isolated installation
+and startup check passed with no configuration file. Captured package output:
+
+```text
+Package verified: taximeter-0.1.2.tgz
+209006 bytes compressed; 532666 bytes unpacked; 16 files.
+Both CLI aliases, ESM entry point, declarations, and prebuilt UI are present.
+6 relative Markdown file links resolve inside the package.
+Files whitelist honored; no UI source maps, source tree, tests, dependencies, or local state.
+```
