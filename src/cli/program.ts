@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { Command } from "commander";
 import { z } from "zod";
 import { loadConfig, portInputSchema } from "../config/io";
+import { toCsv, toInvoice, toJson } from "../export";
 import { formatAmount, totals } from "../ledger/derive";
 import { Ledger } from "../ledger/store";
 import { httpUrlSchema, labelSchema } from "../model";
@@ -21,7 +22,16 @@ const reportFlags = common.extend({
   agent: labelSchema.optional(),
   host: labelSchema.optional(),
 });
-const exportFlags = common.extend({ json: z.string().min(1).optional() });
+const exportFlags = common
+  .extend({
+    json: z.string().min(1).optional(),
+    csv: z.string().min(1).optional(),
+    invoice: z.string().min(1).optional(),
+  })
+  .refine(
+    (flags) => [flags.json, flags.csv, flags.invoice].filter(Boolean).length <= 1,
+    "Choose one export format",
+  );
 const resetFlags = common.extend({ yes: z.boolean().default(false) });
 
 function options(command: Command): Command {
@@ -109,15 +119,19 @@ export async function runCli(
     });
   options(program.command("export").description("Export the local ledger"))
     .option("--json <file>", "Write JSON to a new file (default: stdout)")
+    .option("--csv <file>", "Write CSV with exact counted and authorized amounts")
+    .option("--invoice <file>", "Write a printable HTML payment statement")
     .action((raw: unknown) => {
       const flags = exportFlags.parse(raw);
       const db = configFrom(flags).db;
       const ledger = new Ledger(existsSync(db) ? db : ":memory:");
       try {
-        const data = `${JSON.stringify({ events: ledger.view(), totals: totals(ledger.view()) }, null, 2)}\n`;
-        if (flags.json) {
-          writeFileSync(resolve(flags.json), data, { flag: "wx", mode: 0o600 });
-          output(`Exported ${resolve(flags.json)}\n`);
+        const events = ledger.view();
+        const data = flags.csv ? toCsv(events) : flags.invoice ? toInvoice(events) : toJson(events);
+        const file = flags.csv ?? flags.invoice ?? flags.json;
+        if (file) {
+          writeFileSync(resolve(file), data, { flag: "wx", mode: 0o600 });
+          output(`Exported ${resolve(file)}\n`);
         } else output(data);
       } finally {
         ledger.close();
