@@ -21,7 +21,7 @@ test("derived totals may be wider than any individual authorization", () => {
 
 test("source never converts integer-string money through floating-point parsers", () => {
   const failures: string[] = [];
-  for (const path of sources("src")) {
+  for (const path of ["src", "ui"].flatMap(sources)) {
     const file = ts.createSourceFile(
       path,
       readFileSync(path, "utf8"),
