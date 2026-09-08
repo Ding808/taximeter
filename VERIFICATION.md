@@ -325,6 +325,8 @@ Both CLI aliases, ESM entry point, declarations, and prebuilt UI are present.
 Files whitelist honored; no UI source maps, source tree, tests, dependencies, or local state.
 ```
 
+
+
 Exit: 0. Elapsed: 1344 ms.
 
 #### node docs/demo.mjs
@@ -991,6 +993,74 @@ and startup check passed with no configuration file. Captured package output:
 ```text
 Package verified: taximeter-0.1.2.tgz
 209006 bytes compressed; 532666 bytes unpacked; 16 files.
+Both CLI aliases, ESM entry point, declarations, and prebuilt UI are present.
+6 relative Markdown file links resolve inside the package.
+Files whitelist honored; no UI source maps, source tree, tests, dependencies, or local state.
+```
+
+## Version 0.2.0: asset policy and ledger scaling
+
+The default policy now rejects parsed payments for unknown network/contract pairs.
+Proxy and SDK regressions verify that rejection occurs before forwarding and
+records the exact `unknown_asset` body. Explicit opt-in, matching custom-token
+budgets, spoofed metadata, and malformed traffic have separate coverage.
+
+Cached budget snapshots are compared with full replay across all five window
+choices and all three scopes, including inclusive boundaries, future timestamps,
+clock reversal, null attribution, 79-digit aggregate totals, duplicates, late
+settlement evidence, retry timestamp moves, rebuilds, migration, independent
+connections, older open writers, and rollback. A 3,000-payment regression makes
+all full-history read methods throw during paid intake and still requires real
+reservations, settlement confirmation, and exact cap enforcement.
+
+### Measured payment path
+
+Measured sequentially on this Windows x64 machine with Node 24.13.0. The baseline
+was the actual published 0.1.2 archive. Both versions used the same
+`scripts/benchmark-ledger.mjs`, synthetic x402 v2 USDC envelopes, three active
+24-hour budgets, and history spread over 22 hours. Each size used one fresh
+file database and 100 timed `Meter.begin` + `Meter.complete` operations after
+closing/reopening the seeded database. Timing excludes request construction and
+final checks, includes the first payment, and uses nearest-rank p95. This is a
+local synthetic measurement, not a network throughput or production latency claim.
+
+| Historical payments | 0.1.2 median / p95 (ms) | 0.2.0 median / p95 (ms) |
+| --- | --- | --- |
+| 1,000 | 8.424 / 10.091 | 2.325 / 3.837 |
+| 10,000 | 92.743 / 101.168 | 2.412 / 3.867 |
+| 50,000 | 539.939 / 572.485 | 3.272 / 4.189 |
+
+Every run verified all measured payments were metered and confirmed, exact totals,
+the next payment's budget rejection, and zero diagnostics. Returning an unmetered
+empty intake fails the benchmark. At 50,000 historical payments, closed database
+size increased from 116,019,200 bytes to 285,630,464 bytes: the persistent cache
+trades disk space and extra writes for bounded budget lookup. Seeding that sample
+took 3,096.065 ms in 0.1.2 and 42,002.451 ms in 0.2.0; these figures include
+fixture parsing and insertion, not just cache construction. Normal reopen took
+1.748 ms and 1.928 ms respectively. The compact prefix table uses SQLite
+[`WITHOUT ROWID`](https://www.sqlite.org/withoutrowid.html) to avoid storing its
+composite lookup key twice. Original source tables retain their rowids.
+
+Reproduce after building each entry, using absolute paths for a baseline entry:
+
+```sh
+node scripts/benchmark-ledger.mjs --counts 1000,10000,50000 --payments 100 --batches 1
+node scripts/benchmark-ledger.mjs --entry /absolute/path/to/0.1.2/dist/index.js --counts 1000,10000,50000 --payments 100 --batches 1
+```
+
+The hot path synchronizes only newly appended source rows and reads fixed-depth
+prefix keys. Source catch-up and initial migration remain proportional to newly
+discovered records. Full reports, exports, and dashboard reads still replay the
+source log; their cost is not included in the payment-path measurements.
+
+Final local checks on Node 24.13.0 passed: typecheck, lint, 341 tests across 20
+files, build, package contents, and isolated startup. Ledger coverage is 100%
+statements/functions/lines and 95.76% branches; policy coverage is 100% in all
+four metrics. Captured final package output:
+
+```text
+Package verified: taximeter-0.2.0.tgz
+213655 bytes compressed; 551748 bytes unpacked; 16 files.
 Both CLI aliases, ESM entry point, declarations, and prebuilt UI are present.
 6 relative Markdown file links resolve inside the package.
 Files whitelist honored; no UI source maps, source tree, tests, dependencies, or local state.

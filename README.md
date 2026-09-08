@@ -51,7 +51,7 @@ Open a terminal in this source checkout, with Node 20+ and npm installed.
 You should now see:
 
 ```text
-Taximeter 0.1.2
+Taximeter 0.2.0
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
@@ -116,6 +116,8 @@ their amount before forwarding the payment replay.
 Policy evaluation and reservation share one SQLite transaction, so concurrent
 payments cannot all consume the same remaining capacity.
 Append-only payment, outcome, and diagnostic records derive every total with BigInt.
+Payment checks use an incrementally maintained index of exact budget sums, avoiding
+a replay of all prior payments. The index can be rebuilt from the original log.
 The local dashboard polls that ledger every second and exports the same counted amounts.
 
 An initial 402 challenge is an offer, not spend. Reported settlement counts as
@@ -138,6 +140,11 @@ as text to prevent a spreadsheet application from rounding them.
 
 ## Configuration
 
+When upgrading from 0.1.x, upgrade all writers together. Opening an existing
+ledger builds the new budget index once and upgrades its schema; the source log
+is preserved. Older 0.1.x clients cannot reopen that migrated database. Parsed
+unknown assets now require an explicit opt-in as described below.
+
 No file is required. Start from [the example](taximeter.config.example.json) when
 needed. Precedence, highest first: flags, environment, explicit `--config` file,
 `taximeter.config.json` in the working directory, `~/.taximeter/config.json`, defaults.
@@ -158,6 +165,7 @@ invalid values are rejected with Zod.
 | `policy.allowPayTo` | `[]` | Empty allows all recipients; otherwise exact case-insensitive addresses. |
 | `policy.maxSinglePayment` | `"1000000"` | One USDC per authorization by default; `null` disables the cap. |
 | `policy.maxSingleAsset` | `USDC` | Asset to which the single-payment cap applies. |
+| `policy.unknownAsset` | `"deny"` | `deny` blocks parsed payments whose network and contract are absent from the offline asset registry; `allow` opts in to those assets. |
 | `ports.proxy` | `8402` | Loopback HTTP listener; `0` selects an available port. |
 | `ports.dashboard` | `8403` | Loopback dashboard listener; `0` selects an available port. |
 | `db` | `~/.taximeter/ledger.db` | SQLite path; relative paths resolve against the working directory. |
@@ -168,9 +176,16 @@ All commands accept `--db` and `--config`. Start also accepts `--proxy-port`,
 `TAXIMETER_PORT`, and `TAXIMETER_DASHBOARD_PORT`.
 
 Missing task/agent labels share an **Unattributed** bucket. Supply `Taximeter-Task`
-and `Taximeter-Agent` headers, or SDK options. The local USDC registry recognizes
-Base and Base Sepolia; other contracts remain separate atomic-unit balances with
-unknown decimals. Default USDC budgets do not cap unknown assets.
+and `Taximeter-Agent` headers, or SDK options. The offline asset registry recognizes
+USDC by its network and contract on Base and Base Sepolia. Parsed payments for
+other assets are denied by default with `unknown_asset`; supplied symbols or
+decimal metadata cannot make a token known. Unsupported or unparseable payment
+formats still pass through with a diagnostic.
+
+Custom-token budgets require `policy.unknownAsset: "allow"`. This opts in to parsed
+unknown assets, which remain separate atomic-unit balances with unknown decimals.
+Configure budgets using the exact contract address and, when needed, its network.
+Default USDC budgets do not cap these assets; only matching budgets and caps apply.
 
 A denied replay receives HTTP 402 before it reaches the upstream. For a cap of
 140 atomic units already fully consumed, the response is:
@@ -185,9 +200,10 @@ A denied replay receives HTTP 402 before it reaches the upstream. For a cap of
 }
 ```
 
-Reasons are `host_denied`, `host_not_allowed`, `recipient_not_allowed`,
+Reasons are `host_denied`, `host_not_allowed`, `recipient_not_allowed`, `unknown_asset`,
 `max_single_payment`, `per_task_budget`, `per_agent_budget`, and `global_budget`.
-Host/recipient denials have `budget: null` and `remaining: null`.
+Host, recipient, and unknown-asset denials have `budget: null`, `spent: "0"`, and
+`remaining: null`.
 
 ## What this is not
 
