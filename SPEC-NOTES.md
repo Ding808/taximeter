@@ -5,6 +5,43 @@ implementation, the supported subset, and corrections to [SPEC.md](SPEC.md).
 Amounts below are atomic integer strings. Taximeter does not sign, verify, or
 settle a payment.
 
+## Implemented deviations and release limits
+
+This is the release's consolidated deviation inventory. The detailed wire shapes
+and source evidence follow below; these limits apply to both the CLI and SDK
+unless a row names one intake specifically.
+
+| Area in the brief | Implemented behavior and reason |
+| --- | --- |
+| Broad x402 support (§2, §4) | Support HTTP v1/v2 `exact` EVM **EIP-3009** authorizations. v1 maps only `base` and `base-sepolia`; v2 accepts positive `eip155:<chain-id>` identifiers. Permit2, ERC-7710, other transfer methods, schemes, and networks are diagnosed and passed through. Their different authorization semantics cannot safely share this parser. |
+| Generic 402 JSON and complete replay context (§0, §2) | v1 reads the challenge body and `X-PAYMENT`; v2 reads `PAYMENT-REQUIRED` and `PAYMENT-SIGNATURE`. v1 replays omit asset context and need a previously observed, unambiguous challenge. v2 replays carry `accepted`. A status of 402 alone does not establish x402. |
+| Unbounded challenge observation (§4) | v1 correlation is local to each intake instance, with a five-minute TTL and at most 1,000 cached contexts. The key binds actual URL, method, task, agent, Authorization, and Cookie. Bodies are limited to 64 KiB; payment header text is limited to 65,536 characters. The proxy taps the streaming response without delaying delivery; the SDK additionally limits its cloned body observation to 100 ms. Missing, expired, oversized, slow, compressed proxy bodies, and ambiguous challenges cannot be metered reliably and pass through with a diagnostic. |
+| Token metadata in every event (§3) | Only Base and Base Sepolia USDC have trusted, static six-decimal metadata. Other assets retain exact amounts with `decimalsKnown: false` and an internal `decimals: 0` placeholder; displays say **atomic units**, not zero-decimal tokens. No RPC, token-list, or price lookup runs at runtime. |
+| One USDC balance and scalar maximum (§3) | Every total and budget is scoped separately by normalized network and contract. Symbol budgets match the local registry. `maxSingleAsset`, default `USDC`, scopes `maxSinglePayment`; unknown assets do not inherit a misleading one-USDC threshold. Optional budget `network` narrows a rule further. |
+| One `events` table and the original event fields (§3) | Keep immutable events and add append-only `outcomes` and `diagnostics` tables. Internal fields include `paymentKey`, `decimalsKnown`, `settlementStatus`, `settlement_unknown`, and derived `attemptedAt`; outcomes identify each forwarding attempt. These are Taximeter fields, not invented x402 wire fields. |
+| Deduplication by nonce/transaction/resource within a small window (§4) | A persistent key binds network, asset, payer, nonce, amount, recipient, and both authorization validity bounds. Signature, resource, and observation time are excluded. The same authorization counts once across retries and URLs; changed immutable authorization details retain a separate conservative reservation. |
+| Observed payments equal settled spend (§3, §4) | Reserve recognized authorizations synchronously in the same SQLite transaction as policy evaluation, before forwarding. Upstream-reported success is confirmation evidence, not independent settlement verification. Any confirmed attempt wins; otherwise any unresolved attempt retains capacity. Only an authorization whose known attempts all failed contributes zero. |
+| Retry timing and upstream failure (§4) | `attemptedAt` separates the latest unconfirmed forwarding attempt from immutable `ts`. An unconfirmed replay outside a rolling budget window must reacquire capacity. Missing settlement headers, disconnects, and unconfirmed 5xx responses remain unknown; an explicit matching success header can confirm even on a non-2xx response. |
+| Storage failure while preserving traffic (§4) | Runtime ledger/policy-intake storage failures fail open and emit a visible local warning plus a diagnostic when storage permits. A failed outcome write leaves its original reservation in place. Budget enforcement requires working storage; startup/configuration failures still fail visibly rather than claiming a working service. |
+| Universal zero-code proxy support (§2) | Clients must actually honor their proxy configuration. HTTPS CONNECT is an encrypted byte tunnel and is explicitly unmetered; Taximeter installs no certificate authority. An explicit localhost route with `--upstream`, or the SDK inside the payment wrapper, can inspect HTTP payment messages sent to HTTPS upstreams. |
+| Explicit base URL semantics (§2) | Origin-form requests require `upstream`. Its **origin** supplies the destination; the incoming path replaces any configured upstream path prefix. For example, upstream `https://api.example/v1` plus `/weather` forwards to `https://api.example/weather`. Leading `//` stays on the configured origin. Original encoded paths and query text are preserved separately from URL authority validation. |
+| Byte-identical forwarding and upgraded protocols (§4) | Preserve request/response payload bytes, duplicate end-to-end headers, and trailers, while rebuilding HTTP hop-by-hop headers and transfer framing as a proxy must. Recognized signed HTTP upgrade handshakes can be gated; subsequent upgraded stream frames are unmetered and diagnosed. CONNECT and upgrades do not imply inspection of payments hidden in their streams. |
+| Wrapping an arbitrary payment-enabled fetch (§2) | Compose `wrapFetchWithPayment(withMeter(fetch, options), client)` so each signed replay reaches the meter. The supplied transport's internal retries and redirects are invisible. A response marked `redirected` emits a visibility diagnostic and is never cached as a v1 challenge for the original URL. Host-sensitive callers can request `redirect: "error"` or expose each hop. The wrapper returns the original response and never consumes a request body. |
+| Configuration precedence (§3) | Extend precedence to flags > `TAXIMETER_*` environment > explicit `--config` file > cwd file > home file > defaults. The explicit file layers over automatic files. Environment support is exactly `TAXIMETER_DB`, `TAXIMETER_PORT`, and `TAXIMETER_DASHBOARD_PORT`. Relative database paths resolve from cwd; `~` expands locally. |
+| Additional configuration choices (§3) | `upstream` supports explicit routing; budget windows support `1h`, `24h`, `7d`, and `30d`; nullable budgets and `maxSinglePayment` disable their respective rules; port `0` requests an available port. Config and CLI options remain strict Zod inputs. Host/recipient allowlists are exact, case-insensitive matches, not wildcard patterns. |
+| Reset and local checks (§2) | `reset --yes` archives rather than deletes the ledger and acquires an atomic CLI lock. All SDK writers must be stopped separately; the lock coordinates CLI instances only. Read-only commands use an empty in-memory ledger when the path is absent. `doctor` checks local configuration and SQLite without requesting any upstream; it does not certify wallet/facilitator access or write permission for a nonexistent database path. |
+| Dashboard session and hero (§5) | Timeline shows the current UTC hour and preceding 23 hourly buckets, not an arbitrary process session. The Now hero shows the selected asset's active global budget window; all-time ledger totals are labeled separately. Assets and networks never share one monetary chart total. The latest 30 events and 10 diagnostics are shown; raw payment JSON remains available in JSON export. |
+| Thirty visible rows and Google Fonts (§5) | The event stream keeps 30 recent rows, with scrolling where screen height or width requires it. System grotesque and monospace stacks replace runtime Google Fonts requests to honor the network invariant. Complete light/dark tokens and exact BigInt-derived chart geometry are retained. |
+| Export and invoice format (§2, §5) | CSV includes all derived payment rows: `amount` is the counted contribution, while `authorizedAmount` preserves the original proposal. Blocked and wholly failed payments contribute zero. Sum each network/asset separately to reproduce the dashboard ledger totals. The invoice is standalone printable HTML, with no PDF renderer, exchange-rate conversion, tax calculation, or settlement attestation. |
+| Module and dependency choices (§7) | Ship ESM only, with no optional CommonJS build. Pin `better-sqlite3` 12.8.0 to preserve Node 20 support; version 13 requires Node 22. Exact pins and the audited esbuild override are recorded in `package.json` and the lockfile. |
+| Fixture realism and financial claims (§7) | Fixture envelopes follow primary protocol examples but all authorizations, signatures, and settlement responses are synthetic. Tests exercise parsing, transport, budget races, failures, and exact accounting; no real transfers, wallet signing, facilitator call, or independent chain verification is performed. |
+| Public installation and repository tagline (§1, §6) | `npm view taximeter` returned `E404` again on **2026-09-08**, so the package name remains `taximeter` and registry installation is not yet available. The README retains the required `npx taximeter start` release command and provides literal source-build commands for current use. Fresh-directory startup from the local tarball must be evidenced in `VERIFICATION.md` before publication is claimed. The connected GitHub repository is private; its visibility has not been changed. The unauthenticated browser cannot verify or edit its description, and the connector has no repository-update action. Setting the GitHub description to **A taximeter for your AI agents.** and making a public release remain pending owner actions. |
+
+These limitations make Taximeter a cooperative local meter. An agent that
+bypasses the intake, uses an unsupported payment method, or hides a replay
+inside a transport can bypass its budget checks. No supported flow holds funds,
+private keys, or payment-signing authority.
+
 ## Primary sources and published packages
 
 The requested [Coinbase repository README](https://github.com/coinbase/x402/blob/main/README.md)
@@ -233,11 +270,13 @@ Malformed, missing, or inconsistent settlement evidence remains unknown.
    pass through with a diagnostic. This bounded subset supports the common USDC
    flow without pretending to understand different authorization semantics.
 2. **Challenge correlation.** v1 requires an observed compatible challenge.
-   Correlation uses the actual upstream resource and request context, with a
-   bounded lifetime, then matches scheme, network, recipient, and atomic amount.
+   Correlation uses actual URL, method, task, agent, Authorization, and Cookie,
+   with a five-minute TTL and 1,000-context capacity. It then matches scheme,
+   network, recipient, and atomic amount.
    Ambiguous asset choices must not be guessed. A v2 replay can supply its own
    selected requirements, so the initial 402 exchange need not have been seen.
    Host policy uses the actual upstream URL, not an untrusted advertised URL.
+   The SDK does not cache a response marked `redirected` under the original URL.
 3. **Asset identity.** Totals and budget windows are separate for every normalized
    network and asset contract. An asset symbol is a label, not an identity.
    Case-normalized EVM addresses avoid duplicate groups for checksum variants.
@@ -262,46 +301,44 @@ Malformed, missing, or inconsistent settlement evidence remains unknown.
    recognized authorization consumes conservative budget capacity before the
    asynchronous upstream request completes. Append-only outcome observations
    distinguish reported settlement, known failure, and unknown settlement.
-   Derivations exclude a known failed payment unless contradictory success
-   evidence exists. Missing settlement evidence, a disconnect, or an upstream
-   5xx after forwarding does not silently release that capacity.
+   Outcomes retain separate attempt identities. Confirmation on any attempt
+   wins; otherwise any unresolved attempt retains capacity. Only wholly failed
+   attempts release a payment's contribution. Missing settlement evidence, a
+   disconnect, or an unconfirmed upstream 5xx after forwarding does not silently
+   release that capacity. `attemptedAt` permits an unconfirmed retry outside a
+   rolling window to reacquire capacity without rewriting the original event.
 8. **Idempotency.** The principal EIP-3009 identity includes network, asset,
-   payer, and nonce. Repeated observations of that authorization count once,
+   payer, and nonce, bound to amount, recipient, `validAfter`, and `validBefore`.
+   Repeated observations of that authorization count once,
    including observations under a different resource. Nonce alone would collide
    across payers/contracts; transaction hash alone can collapse different
    transfers in one transaction. Resource and wall-clock time alone are not a
    reliable payment identity. The optional protocol payment-identifier extension
    is preserved but is not trusted to override an EIP-3009 authorization identity.
+   Signature bytes are not part of the key. Conflicting immutable authorization
+   details receive separate conservative reservations rather than a free replay.
 9. **Concurrency.** Policy evaluation and reservation must be one synchronous
    operation before forwarding. Otherwise concurrent requests can all observe
    the same old total. Totals derive from the event log; settlement observations
    do not mutate earlier rows.
 10. **Transparency boundary.** Unsupported or malformed traffic is forwarded
-    unchanged with `parse_failed` diagnostics. Therefore this is a cooperative
+    with its payload unchanged and `parse_failed` diagnostics. Storage failures
+    also fail open, with a visible local warning; enforcement needs working
+    storage. Therefore this is a cooperative
     local meter, not a security boundary against an agent deliberately bypassing
     the proxy or using an unsupported payment form. Raw audit payloads are
     payment authorizations, not private keys; the ledger is local state.
 
-## Corrections and limits relative to the brief
+## Additional protocol corrections relative to the brief
+
+The comprehensive implementation inventory is at the top of this file. These
+additional corrections concern the research premise itself:
 
 | Brief assumption or omission | Resolution |
 | --- | --- |
 | Coinbase repository is the primary project home. | Read the requested files and follow the README's Foundation pointer; preserve source links and research date above. |
-| x402 can be treated as a single generic 402 JSON shape. | Implement the two header generations and their distinct envelopes. A generic 402 is not necessarily a payment. |
-| Every replay contains enough information to construct a payment event. | v1 omits the asset and resource and needs unambiguous challenge correlation. v2 includes `accepted` and can arrive without an initial observed 402. |
-| A fixed exact EVM signature shape covers all x402. | The live scheme includes Permit2 and ERC-7710; published EVM types include multiple methods and variable signature forms. Initial support is explicitly EIP-3009. |
-| `decimals` and `assetSymbol` can be parsed from every payment. | These are local metadata. Unknown tokens are shown in atomic units; arbitrary `extra.name` is not trusted. |
-| USDC symbol budgets define one aggregate global balance. | Budgets remain separate by network and contract, including trusted USDC deployments. |
-| An unscoped maximum atomic amount means one USDC for every asset. | `maxSingleAsset` defines its asset scope; the default is known USDC. |
-| An observed signed payment is necessarily paid spend. | Track authorization plus append-only settlement outcomes; label upstream-reported confirmation accurately. |
-| `PaymentEvent` only needs the listed fields. | Add internal identity, decimals-known metadata, and settlement outcome information so deduplication and uncertainty are explicit. These are Taximeter fields, not invented x402 fields. |
-| Nonce, transaction hash, or resource plus timestamp are interchangeable deduplication keys. | Use the EIP-3009 authorization identity and retain outcome correlation; do not drop independent transfers that share a transaction. |
-| Proxy budget checks can wait until the response arrives. | Reserve synchronously before forwarding to prevent concurrent overspend. |
-| `HTTP_PROXY` / `HTTPS_PROXY` guarantees zero-code metering for every client. | Environment-variable support depends on the client. HTTPS CONNECT carries encrypted bytes; without intercepting TLS, its payment headers are invisible. Transparent CONNECT is unmetered and identified as such. Use the explicit localhost route or SDK for metered HTTPS upstream access. |
-| Wrapping any payment-enabled fetch necessarily gates its internal retries. | Supply `withMeter(fetch, options)` as the transport to `wrapFetchWithPayment`. Wrapping the outer payment wrapper cannot observe its internal signed replay. |
-| Loading Google Fonts is compatible with zero additional runtime network calls. | Use local fonts or complete system fallback stacks. The dashboard must not fetch fonts from Google at runtime. |
+| Nominal TypeScript declarations are the only accepted wire shape. | Published 2.25.0 runtime schemas permit optional/nullish descriptive fields and optional EIP-3009 signatures. Follow compatible schemas without weakening the authorization relationships that determine spend. |
 | The payment rails have no budget support. | Published core 2.25.0 already has client `spendControls`, including a default per-payment cap. Taximeter's distinct contribution is the persistent local ledger, attribution, rolling budgets, and exports. |
-| Real protocol fixtures require real payments. | Fixtures reproduce documented wire envelopes using deterministic synthetic authorizations and settlement results. No genuine transfers or facilitator calls are performed. |
 
 The HTTPS limitation follows from the transport design: a CONNECT tunnel gives
 the proxy an encrypted stream, while the payment protocol lives inside HTTP
