@@ -16,6 +16,10 @@ export default defineConfig({
       provider: "v8",
       include: ["src/**/*.ts"],
       reporter: ["text", "json-summary"],
+      thresholds: {
+        "src/ledger/**": { statements: 90, branches: 90, functions: 90, lines: 90 },
+        "src/policy/**": { statements: 90, branches: 90, functions: 90, lines: 90 },
+      },
     },
   },
 });
