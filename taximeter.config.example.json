@@ -9,7 +9,8 @@
     "denyHosts": [],
     "allowPayTo": [],
     "maxSinglePayment": "1000000",
-    "maxSingleAsset": "USDC"
+    "maxSingleAsset": "USDC",
+    "unknownAsset": "deny"
   },
   "ports": { "proxy": 8402, "dashboard": 8403 },
   "db": "~/.taximeter/ledger.db"
