@@ -16,7 +16,8 @@ from source with the quickstart below. Requires Node 20 or newer.
 
 This local recording shows 20 payments passing and payment 21 being blocked at
 an exact total of 140 atomic units. It uses synthetic x402 envelopes and never
-moves money. [Record the demo](docs/RECORDING.md) with the included simulation.
+moves money. [Record the demo](https://github.com/Ding808/taximeter/blob/main/docs/RECORDING.md)
+with the simulation in the source checkout.
 
 ## Why
 
@@ -50,7 +51,7 @@ Open a terminal in this source checkout, with Node 20+ and npm installed.
 You should now see:
 
 ```text
-Taximeter 0.1.1
+Taximeter 0.1.2
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
@@ -60,7 +61,7 @@ HTTPS CONNECT is unmetered; use --upstream or withMeter for HTTPS payments.
 Open [the local dashboard](http://127.0.0.1:8403). It explains how to connect an
 agent before the first payment arrives. Stop the process with Ctrl+C.
 The prebuilt npm package starts directly; installing it does not build the frontend.
-Dependency download time depends on the connection. See [measured verification](VERIFICATION.md).
+Dependency download time depends on the connection.
 
 Choose the connection mode your agent supports:
 
@@ -126,7 +127,8 @@ Repeated EIP-3009 authorizations count once across retries, using network, contr
 payer, nonce, amount, recipient, and validity bounds. Conflicting authorization
 details receive separate reservations. Each unresolved forwarding attempt keeps
 capacity reserved; an old unconfirmed retry must reacquire capacity in the current
-window. [Protocol notes](SPEC-NOTES.md) explain these rules and the supported subset.
+window. [Protocol notes](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md)
+explain these rules and the supported subset.
 
 CSV `amount` is the counted contribution, including zero for blocked/known failed
 rows. `authorizedAmount` retains the original amount. Sum `amount` with BigInt
@@ -201,6 +203,6 @@ to report a problem.
 
 ## Contributing / license
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md), [the decisions](DECISIONS.md), and
-[the specification](SPEC.md). Test and release evidence is in [VERIFICATION.md](VERIFICATION.md).
+See the [contribution guide](https://github.com/Ding808/taximeter/blob/main/CONTRIBUTING.md)
+for development instructions, design documents, and verification evidence.
 Licensed under [MIT](LICENSE).

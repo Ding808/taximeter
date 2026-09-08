@@ -1,6 +1,6 @@
 {
   "name": "taximeter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A taximeter for your AI agents.",
   "type": "module",
   "license": "MIT",
@@ -28,15 +28,10 @@
     "README.md",
     "LICENSE",
     "SECURITY.md",
-    "CONTRIBUTING.md",
-    "CODE_OF_CONDUCT.md",
     "CHANGELOG.md",
-    "DECISIONS.md",
-    "VERIFICATION.md",
-    "SPEC.md",
-    "SPEC-NOTES.md",
     "taximeter.config.example.json",
-    "docs"
+    "docs/SDK.md",
+    "docs/demo.gif"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -8,7 +8,7 @@ Install the registry release with `npm install taximeter`. From a source checkou
 run `npm ci` and `npm run build`, then save the examples at the repository root.
 Their `import "taximeter"` statements resolve the package's own built exports.
 To try a local build in another project, run `npm pack`, copy the resulting
-tarball there, and use `npm install ./taximeter-0.1.1.tgz`.
+tarball there, and use `npm install ./taximeter-0.1.2.tgz`.
 
 ## Try it locally
 
@@ -172,7 +172,8 @@ The initial adapter meters exact EVM EIP-3009 payments: legacy v1 on Base and
 Base Sepolia, and v2 with EVM CAIP-2 networks. Permit2, ERC-7710, other schemes,
 and other rails remain unmetered. Known Base/Base Sepolia USDC uses six decimal
 places; unknown tokens remain exact atomic units. Budgets and totals are
-separate for every network and asset. See [SPEC-NOTES](../SPEC-NOTES.md) for
+separate for every network and asset. See
+[protocol notes](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md) for
 wire formats, challenge correlation, idempotency, and settlement rules.
 
 ## Read the same ledger from the CLI
