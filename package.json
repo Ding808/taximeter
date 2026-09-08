@@ -44,8 +44,13 @@
   "dependencies": {
     "better-sqlite3": "12.8.0",
     "commander": "13.1.0",
-    "uuid": "11.1.0",
+    "uuid": "11.1.1",
     "zod": "4.5.4"
+  },
+  "overrides": {
+    "tsup": {
+      "esbuild": "0.28.1"
+    }
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.12",
