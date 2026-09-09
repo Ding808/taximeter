@@ -1,5 +1,11 @@
 # Taximeter
 
+## 0.2.2
+
+### Patch Changes
+
+- Print a one-time stderr notice when the first encrypted CONNECT tunnel arrives, while preserving per-tunnel diagnostics and forwarding behavior. Add a manual Base Sepolia x402 verification workflow and document measured storage-reduction options.
+
 ## 0.2.1
 
 ### Patch Changes

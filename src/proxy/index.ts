@@ -1,3 +1,4 @@
+import { Console } from "node:console";
 import {
   createServer,
   request as httpRequest,
@@ -21,6 +22,10 @@ const incomingHeadersSchema = z.record(
   z.union([z.string(), z.array(z.string()), z.undefined()]),
 );
 const sockets = new WeakMap<Server, Set<Socket>>();
+const tlsUnmeteredMessage =
+  "Encrypted CONNECT tunnel forwarded without payment visibility. Use the SDK or explicit upstream mode to meter HTTPS.";
+const notices = new Console({ stdout: process.stdout, stderr: process.stderr, ignoreErrors: true });
+let tlsNoticeShown = false;
 
 export function normalizedHeaders(input: IncomingHttpHeaders): Record<string, string> {
   const result: Record<string, string> = {};
@@ -195,11 +200,15 @@ export function createProxy(options: { ledger: Ledger; config: TaximeterConfig }
         .max(65535)
         .parse(target.port || "80");
       const host = target.hostname.replace(/^\[|\]$/g, "");
-      meter.diagnose(
-        "tls_unmetered",
-        address,
-        "Encrypted CONNECT tunnel forwarded without payment visibility. Use the SDK or explicit upstream mode to meter HTTPS.",
-      );
+      meter.diagnose("tls_unmetered", address, tlsUnmeteredMessage);
+      if (!tlsNoticeShown) {
+        tlsNoticeShown = true;
+        try {
+          notices.error(tlsUnmeteredMessage);
+        } catch {
+          // A console notice must never interrupt the tunnel.
+        }
+      }
       const upstream = connect(port, host, () => {
         client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
         upstream.write(head);
