@@ -1,5 +1,11 @@
 # Taximeter
 
+## 0.3.2
+
+### Patch Changes
+
+- Refresh the package overview and synchronize the published usage documentation.
+
 ## 0.3.1
 
 ### Patch Changes

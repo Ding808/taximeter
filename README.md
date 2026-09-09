@@ -71,7 +71,7 @@ installed copy.
 You should now see:
 
 ```text
-Taximeter 0.3.1
+Taximeter 0.3.2
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
