@@ -1,5 +1,11 @@
 # Taximeter
 
+## 0.3.1
+
+### Patch Changes
+
+- Add a dashboard screenshot to the GitHub and npm README, include the image in the package, and publish the reorganized installation and source quickstarts with clearer documentation headings.
+
 ## 0.3.0
 
 ### Minor Changes

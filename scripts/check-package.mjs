@@ -90,6 +90,7 @@ function checkPackage() {
     "taximeter.config.example.json",
     "docs/SDK.md",
     "docs/demo.gif",
+    "docs/dashboard.png",
   ]);
   requireCondition(
     manifest.files.includes("dist"),
@@ -150,6 +151,7 @@ function checkPackage() {
     "taximeter.config.example.json",
     "docs/SDK.md",
     "docs/demo.gif",
+    "docs/dashboard.png",
     "dist/index.js",
     "dist/index.d.ts",
     "dist/cli/index.js",
