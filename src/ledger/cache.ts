@@ -34,12 +34,14 @@ const attemptRowSchema = z.object({
 const prefixRowSchema = z.object({
   prefix: z.string().regex(/^[0-9a-f]{0,16}$/),
   amount: integerStringSchema,
+  count: integerStringSchema,
 });
 const scopeSchema = z.enum(["perTask", "perAgent", "global"]);
 const windowSchema = z.enum(["1h", "24h", "7d", "30d"]);
 const timeSchema = z.number().int().min(-8_640_000_000_000_000).max(8_640_000_000_000_000);
 type Scope = z.infer<typeof scopeSchema>;
 type Window = z.infer<typeof windowSchema>;
+type Contribution = { amount: bigint; count: bigint };
 const windows: Readonly<Record<Window, number>> = {
   "1h": 3_600_000,
   "24h": 86_400_000,
@@ -154,22 +156,25 @@ export class LedgerCache {
     return row ? paymentEventSchema.parse(JSON.parse(row.payload)) : undefined;
   }
 
-  spent(
+  totals(
     proposed: PaymentEvent,
     inputScope: Scope,
     inputWindow: Window | undefined,
     now: number,
-  ): string {
+  ): { amount: string; count: string } {
     const payment = paymentEventSchema.parse(proposed);
     const scope = scopeSchema.parse(inputScope);
     const window = windowSchema.optional().parse(inputWindow);
     const end = timeSchema.parse(now);
     const key = partition(payment, scope);
     const upper = this.prefixTotal(key, end);
-    const lower = window ? this.prefixTotal(key, end - windows[window] - 1) : 0n;
-    const result = upper - lower;
-    if (result < 0n) throw new Error("Cached budget total is inconsistent");
-    return result.toString();
+    const lower = window
+      ? this.prefixTotal(key, end - windows[window] - 1)
+      : { amount: 0n, count: 0n };
+    const amount = upper.amount - lower.amount;
+    const count = upper.count - lower.count;
+    if (amount < 0n || count < 0n) throw new Error("Cached budget total is inconsistent");
+    return { amount: amount.toString(), count: count.toString() };
   }
 
   private applyOutcome(outcome: Outcome): void {
@@ -273,18 +278,20 @@ export class LedgerCache {
   }
 
   private changeContribution(previous: PaymentEvent | undefined, current: PaymentEvent): void {
-    const changes = new Map<string, Map<string, bigint>>();
+    const changes = new Map<string, Map<string, Contribution>>();
     const add = (payment: PaymentEvent, sign: bigint) => {
       if (!countsAsSpend(payment)) return;
       const amount = BigInt(payment.amount) * sign;
-      if (amount === 0n) return;
       const timestamp = timeKey(Date.parse(payment.attemptedAt ?? payment.ts));
       for (const scope of ["perTask", "perAgent", "global"] as const) {
         const key = partition(payment, scope);
-        const nodes = changes.get(key) ?? new Map<string, bigint>();
+        const nodes = changes.get(key) ?? new Map<string, Contribution>();
         for (let length = 0; length <= timestamp.length; length += 1) {
           const prefix = timestamp.slice(0, length);
-          nodes.set(prefix, (nodes.get(prefix) ?? 0n) + amount);
+          const contribution = nodes.get(prefix) ?? { amount: 0n, count: 0n };
+          contribution.amount += amount;
+          contribution.count += sign;
+          nodes.set(prefix, contribution);
         }
         changes.set(key, nodes);
       }
@@ -292,33 +299,35 @@ export class LedgerCache {
     if (previous) add(previous, -1n);
     add(current, 1n);
     for (const [key, nodes] of changes) {
-      const pending = [...nodes].filter(([, amount]) => amount !== 0n);
+      const pending = [...nodes].filter(([, value]) => value.amount !== 0n || value.count !== 0n);
       if (pending.length === 0) continue;
-      const existing = new Map<string, bigint>();
+      const existing = new Map<string, Contribution>();
       for (const input of this.statement(
-        "SELECT prefix, amount FROM cache_prefix WHERE partitionKey = ? AND prefix IN (SELECT value FROM json_each(?))",
+        "SELECT prefix, amount, count FROM cache_prefix WHERE partitionKey = ? AND prefix IN (SELECT value FROM json_each(?))",
       ).iterate(key, JSON.stringify(pending.map(([prefix]) => prefix)))) {
         const row = prefixRowSchema.parse(input);
-        existing.set(row.prefix, BigInt(row.amount));
+        existing.set(row.prefix, { amount: BigInt(row.amount), count: BigInt(row.count) });
       }
       for (const [prefix, delta] of pending) {
-        const next = (existing.get(prefix) ?? 0n) + delta;
-        if (next < 0n) throw new Error("Cached monetary contribution underflow");
-        if (next === 0n) {
+        const before = existing.get(prefix) ?? { amount: 0n, count: 0n };
+        const amount = before.amount + delta.amount;
+        const count = before.count + delta.count;
+        if (amount < 0n || count < 0n) throw new Error("Cached contribution underflow");
+        if (amount === 0n && count === 0n) {
           this.statement("DELETE FROM cache_prefix WHERE partitionKey = ? AND prefix = ?").run(
             key,
             prefix,
           );
         } else {
           this.statement(
-            "INSERT INTO cache_prefix (partitionKey, prefix, amount) VALUES (?, ?, ?) ON CONFLICT(partitionKey, prefix) DO UPDATE SET amount = excluded.amount",
-          ).run(key, prefix, next.toString());
+            "INSERT INTO cache_prefix (partitionKey, prefix, amount, count) VALUES (?, ?, ?, ?) ON CONFLICT(partitionKey, prefix) DO UPDATE SET amount = excluded.amount, count = excluded.count",
+          ).run(key, prefix, amount.toString(), count.toString());
         }
       }
     }
   }
 
-  private prefixTotal(key: string, time: number): bigint {
+  private prefixTotal(key: string, time: number): Contribution {
     const timestamp = timeKey(time);
     const prefixes: string[] = [];
     for (let index = 0; index < timestamp.length; index += 1) {
@@ -330,11 +339,13 @@ export class LedgerCache {
       }
     }
     prefixes.push(timestamp);
-    let sum = 0n;
+    const sum = { amount: 0n, count: 0n };
     for (const input of this.statement(
-      "SELECT prefix, amount FROM cache_prefix WHERE partitionKey = ? AND prefix IN (SELECT value FROM json_each(?))",
+      "SELECT prefix, amount, count FROM cache_prefix WHERE partitionKey = ? AND prefix IN (SELECT value FROM json_each(?))",
     ).iterate(key, JSON.stringify(prefixes))) {
-      sum += BigInt(prefixRowSchema.parse(input).amount);
+      const row = prefixRowSchema.parse(input);
+      sum.amount += BigInt(row.amount);
+      sum.count += BigInt(row.count);
     }
     return sum;
   }

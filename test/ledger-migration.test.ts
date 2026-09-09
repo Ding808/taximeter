@@ -14,11 +14,13 @@ import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { z } from "zod";
 import { runCli } from "../src/cli/program";
+import { parseConfig } from "../src/config";
 import * as backup from "../src/ledger/backup";
 import { LedgerCache } from "../src/ledger/cache";
-import { totalSchema } from "../src/ledger/derive";
+import { deriveEvents, totalSchema } from "../src/ledger/derive";
 import { Ledger } from "../src/ledger/store";
 import { diagnosticSchema, outcomeSchema, type PaymentEvent } from "../src/model";
+import { countForBudget, spentForBudget } from "../src/policy";
 import { event } from "./helpers";
 
 const temporaryParent = realpathSync(tmpdir());
@@ -81,13 +83,15 @@ function close(ledger: Ledger): void {
   ledgers.delete(ledger);
 }
 
-function legacy(path: string): Database.Database {
+function legacy(path: string, version: 1 | 2): Database.Database {
   const connection = new Database(path);
   connections.add(connection);
   connection.pragma("journal_mode = WAL");
   connection.pragma("wal_autocheckpoint = 0");
   connection.pragma("foreign_keys = ON");
   connection.exec(readFileSync(new URL("../migrations/001.sql", import.meta.url), "utf8"));
+  if (version === 2)
+    connection.exec(readFileSync(new URL("../migrations/002.sql", import.meta.url), "utf8"));
   connection.pragma("wal_checkpoint(TRUNCATE)");
   return connection;
 }
@@ -158,7 +162,7 @@ function snapshot(connection: Database.Database) {
 
 function backupDirectories(path: string): string[] {
   return readdirSync(dirname(path), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith(`${basename(path)}.backup-v1-`))
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith(`${basename(path)}.backup-v`))
     .map((entry) => join(dirname(path), entry.name));
 }
 
@@ -181,20 +185,20 @@ function inspectBackup(path: string) {
   }
 }
 
-describe("schema upgrade notice and pre-upgrade backup", () => {
+describe.each([1, 2] as const)("schema v%i upgrade notice and pre-upgrade backup", (version) => {
   test("notice appears on stderr before backup or cache migration starts", () => {
     const { path } = workspace();
-    const source = legacy(path);
+    const source = legacy(path, version);
     seed(source);
     const originalBackup = backup.backupLedger;
     let beforeBackup: { notice: string; version: number; directories: number } | undefined;
-    vi.spyOn(backup, "backupLedger").mockImplementation((input) => {
+    vi.spyOn(backup, "backupLedger").mockImplementation((input, version) => {
       beforeBackup = {
         notice: stderr.join(""),
         version: snapshot(source).version,
         directories: backupDirectories(path).length,
       };
-      return originalBackup(input);
+      return originalBackup(input, version);
     });
     const originalSynchronize = LedgerCache.prototype.synchronize;
     let beforeBackfill: { notice: string; backups: number } | undefined;
@@ -203,16 +207,16 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
       return originalSynchronize.call(this);
     });
     open(path);
-    expect(beforeBackup).toEqual({ notice: "Migrating ledger…\n", version: 1, directories: 0 });
+    expect(beforeBackup).toEqual({ notice: "Migrating ledger…\n", version, directories: 0 });
     expect(beforeBackfill?.backups).toBe(1);
     expect(beforeBackfill?.notice).toContain("Ledger backup saved:");
     expect(beforeBackfill?.notice).toContain(finalBackups(path)[0]);
     expect(stdout).toEqual([]);
   });
 
-  test("standalone v1 backup includes committed events, outcomes, and diagnostics still in the source WAL", () => {
+  test("standalone backup includes committed events, outcomes, and diagnostics still in the source WAL", () => {
     const { path, directory } = workspace();
-    const source = legacy(path);
+    const source = legacy(path, version);
     const value = seed(source);
     expect(statSync(`${path}-wal`).size).toBeGreaterThan(32);
     const expected = snapshot(source);
@@ -228,9 +232,10 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
     const backups = finalBackups(path);
     expect(backups).toHaveLength(1);
     const saved = z.string().parse(backups[0]);
+    expect(basename(dirname(saved))).toContain(`.backup-v${version}-`);
     expect(inspectBackup(saved)).toEqual(expected);
     expect(readdirSync(dirname(saved))).toEqual(["ledger.db"]);
-    expect(snapshot(source).version).toBe(2);
+    expect(snapshot(source).version).toBe(3);
     expect(ledger.events()).toEqual([value]);
     expect(ledger.view()[0]).toMatchObject({
       settlementStatus: "confirmed",
@@ -242,21 +247,21 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
 
   test("migration excludes another writer before the backup snapshot is taken", () => {
     const { path } = workspace();
-    const source = legacy(path);
+    const source = legacy(path, version);
     const original = seed(source);
     source.pragma("busy_timeout = 1");
     const before = snapshot(source);
     const raced = event({ amount: "11" });
     const originalBackup = backup.backupLedger;
     let writerFailure: string | undefined;
-    vi.spyOn(backup, "backupLedger").mockImplementation((input) => {
+    vi.spyOn(backup, "backupLedger").mockImplementation((input, version) => {
       try {
         appendRaw(source, raced);
       } catch (error) {
         writerFailure = z.object({ code: z.string() }).parse(error).code;
       }
       expect(writerFailure).toBe("SQLITE_BUSY");
-      return originalBackup(input);
+      return originalBackup(input, version);
     });
     const migrated = open(path);
     expect(writerFailure).toBe("SQLITE_BUSY");
@@ -285,7 +290,7 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
 
   test("reopening an already migrated ledger does not repeat its backup or notice", () => {
     const { path } = workspace();
-    const source = legacy(path);
+    const source = legacy(path, version);
     seed(source);
     const migrated = open(path);
     const saved = finalBackups(path);
@@ -304,7 +309,7 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
 
   test("failed backfill rolls schema changes back and retains a valid pre-upgrade backup", () => {
     const { path } = workspace();
-    const source = legacy(path);
+    const source = legacy(path, version);
     seed(source);
     const invalid = event();
     appendRaw(source, invalid, { ...invalid, amount: "1.5" });
@@ -320,7 +325,7 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
 
   test("repeated failed upgrades create distinct backups and never overwrite earlier copies", () => {
     const { path } = workspace();
-    const source = legacy(path);
+    const source = legacy(path, version);
     const invalid = event();
     appendRaw(source, invalid, { ...invalid, amount: "1.5" });
     const before = snapshot(source);
@@ -338,7 +343,7 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
 
   test("backup failure aborts the upgrade before any cache or schema changes", () => {
     const { path } = workspace();
-    const source = legacy(path);
+    const source = legacy(path, version);
     seed(source);
     const before = snapshot(source);
     const failure = vi.spyOn(backup, "backupLedger").mockImplementation(() => {
@@ -356,7 +361,7 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
 
   test("a failed SQLite copy leaves only a marked partial and closes its reader", () => {
     const { path } = workspace();
-    const source = legacy(path);
+    const source = legacy(path, version);
     seed(source);
     const before = snapshot(source);
     const originalPrepare = Database.prototype.prepare;
@@ -385,7 +390,7 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
 
   test("a JSON report remains valid while its migration notice and backup path use stderr", async () => {
     const { path } = workspace();
-    const source = legacy(path);
+    const source = legacy(path, version);
     const value = seed(source);
     await runCli(["report", "--db", path, "--json"]);
     const report = z.array(totalSchema).parse(JSON.parse(stdout.join("")));
@@ -395,4 +400,103 @@ describe("schema upgrade notice and pre-upgrade backup", () => {
     expect(stderr.join("")).toContain("Ledger backup saved:");
     expect(stdout.join("")).not.toContain("Migrating ledger");
   });
+});
+
+test("v2 migration rebuilds counts even when its amount cache cursor is already caught up", () => {
+  const { path } = workspace();
+  const source = legacy(path, 2);
+  const confirmed = seed(source);
+  const zero = event({ amount: "0" });
+  const failed = event({ settlementStatus: "failed", settlement_unknown: false });
+  const blocked = event({ status: "blocked", settlement_unknown: false });
+  for (const value of [zero, failed, blocked]) appendRaw(source, value);
+  const settled = outcomeSchema.parse(
+    JSON.parse(
+      z.object({ payload: z.string() }).parse(source.prepare("SELECT payload FROM outcomes").get())
+        .payload,
+    ),
+  );
+  for (const value of deriveEvents([confirmed, zero, failed], [settled]))
+    source
+      .prepare("INSERT INTO cache_payments (paymentId, paymentKey, payload) VALUES (?, ?, ?)")
+      .run(value.id, value.paymentKey, JSON.stringify(value));
+  source
+    .prepare(
+      "INSERT INTO cache_attempts (paymentId, attemptId, firstTs, firstId, winnerTs, winnerId, status, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .run(
+      confirmed.id,
+      confirmed.id,
+      settled.ts,
+      settled.id,
+      settled.ts,
+      settled.id,
+      settled.status,
+      JSON.stringify(settled),
+    );
+  const timestamp = ((1n << 63n) + BigInt(Date.parse(confirmed.ts))).toString(16).padStart(16, "0");
+  for (const scope of ["perTask", "perAgent", "global"] as const) {
+    const attribution =
+      scope === "perTask" ? confirmed.taskId : scope === "perAgent" ? confirmed.agentId : null;
+    const partition = JSON.stringify([scope, attribution, confirmed.network, confirmed.asset]);
+    for (let length = 0; length <= timestamp.length; length++)
+      source
+        .prepare("INSERT INTO cache_prefix (partitionKey, prefix, amount) VALUES (?, ?, ?)")
+        .run(partition, timestamp.slice(0, length), confirmed.amount);
+  }
+  source.exec(
+    "UPDATE cache_cursors SET eventRowid = (SELECT MAX(rowid) FROM events), outcomeRowid = (SELECT MAX(rowid) FROM outcomes) WHERE id = 1",
+  );
+  const before = snapshot(source);
+  const prefixesBefore = sqlRowsSchema.parse(source.prepare("SELECT * FROM cache_prefix").all());
+  const ledger = open(path);
+  const saved = z.string().parse(finalBackups(path)[0]);
+  expect(inspectBackup(saved)).toEqual(before);
+  const savedConnection = new Database(saved, { readonly: true });
+  try {
+    expect(savedConnection.prepare("SELECT * FROM cache_prefix").all()).toEqual(prefixesBefore);
+  } finally {
+    savedConnection.close();
+  }
+  expect(snapshot(source).version).toBe(3);
+  const budgets = parseConfig({}).budgets;
+  const at = Date.parse(confirmed.ts);
+  const state = ledger.policyState(confirmed, budgets, at);
+  expect(state.counts).toEqual({ perTask: "2", perAgent: "2", global: "2" });
+  for (const scope of ["perTask", "perAgent", "global"] as const) {
+    const budget = budgets[scope];
+    expect(budget).not.toBeNull();
+    if (!budget) throw new Error("Expected default budget");
+    expect(state.spent[scope]).toBe(spentForBudget(confirmed, ledger.view(), budget, scope, at));
+    expect(state.counts[scope]).toBe(countForBudget(confirmed, ledger.view(), budget, scope, at));
+  }
+  ledger.rebuildCache();
+  expect(ledger.policyState(confirmed, budgets, at)).toEqual(state);
+  expect(ledger.events()).toEqual([confirmed, zero, failed, blocked]);
+  const backupSpy = vi.spyOn(backup, "backupLedger");
+  close(ledger);
+  stderr.length = 0;
+  expect(open(path).policyState(confirmed, budgets, at)).toEqual(state);
+  expect(backupSpy).not.toHaveBeenCalled();
+  expect(stderr).toEqual([]);
+});
+
+test("the v0.2.x schema guard rejects the v3 source and still accepts its v2 backup", () => {
+  const { path } = workspace();
+  const source = legacy(path, 2);
+  seed(source);
+  const before = snapshot(source);
+  open(path);
+  // Frozen compatibility guard from v0.2.2: reopening an old binary must fail
+  // before it can write amount-only projections over the migrated count cache.
+  const v2VersionSchema = z.object({ version: z.union([z.literal(1), z.literal(2)]) });
+  expect(() =>
+    v2VersionSchema.parse(
+      source.prepare("SELECT MAX(version) AS version FROM schema_version").get(),
+    ),
+  ).toThrow();
+  const saved = inspectBackup(z.string().parse(finalBackups(path)[0]));
+  expect(v2VersionSchema.parse({ version: saved.version })).toEqual({ version: 2 });
+  expect(saved).toEqual(before);
+  expect(snapshot(source).version).toBe(3);
 });

@@ -4,11 +4,17 @@ import { basename, dirname, isAbsolute, join } from "node:path";
 import Database from "better-sqlite3";
 import { afterEach, describe, expect, test } from "vitest";
 import { z } from "zod";
-import { type Budget, budgetSchema, type TaximeterConfig } from "../src/config";
+import { type Budget, budgetSchema, parseConfig, type TaximeterConfig } from "../src/config";
 import { deriveEvents } from "../src/ledger/derive";
 import { Ledger } from "../src/ledger/store";
 import { type Outcome, outcomeSchema, type PaymentEvent } from "../src/model";
-import { type Scope, spentForBudget } from "../src/policy";
+import {
+  countForBudget,
+  evaluate,
+  evaluateWithState,
+  type Scope,
+  spentForBudget,
+} from "../src/policy";
 import { event } from "./helpers";
 
 const now = Date.parse("2026-09-08T12:00:00.000Z");
@@ -100,12 +106,17 @@ function assertParity(ledger: Ledger, proposed: PaymentEvent, rules = budgets(),
   const reference = deriveEvents(ledger.events(), ledger.outcomes());
   expect(ledger.view()).toEqual(reference);
   const expected = { perTask: "0", perAgent: "0", global: "0" };
+  const expectedCounts = { perTask: "0", perAgent: "0", global: "0" };
   for (const scope of scopes) {
     const rule = rules[scope];
-    if (rule) expected[scope] = spentForBudget(proposed, reference, rule, scope, at);
+    if (rule) {
+      expected[scope] = spentForBudget(proposed, reference, rule, scope, at);
+      expectedCounts[scope] = countForBudget(proposed, reference, rule, scope, at);
+    }
   }
   const state = ledger.policyState(proposed, rules, at);
   expect(state.spent).toEqual(expected);
+  expect(state.counts).toEqual(expectedCounts);
   expect(state.reserved).toEqual(
     reference.find(
       (entry) => entry.status === "observed" && entry.paymentKey === proposed.paymentKey,
@@ -155,6 +166,7 @@ describe("exact cached budget state", () => {
     expect(assertParity(ledger, payment(1))).toEqual({
       reserved: undefined,
       spent: { perTask: "0", perAgent: "0", global: "0" },
+      counts: { perTask: "0", perAgent: "0", global: "0" },
     });
   });
 
@@ -184,6 +196,8 @@ describe("exact cached budget state", () => {
     const state = assertParity(ledger, payment(99), budgets(sample.window));
     const expected = sample.window ? "30" : "31";
     expect(state.spent).toEqual({ perTask: expected, perAgent: expected, global: expected });
+    const count = sample.window ? "4" : "5";
+    expect(state.counts).toEqual({ perTask: count, perAgent: count, global: count });
     ledger.rebuildCache();
     expect(assertParity(ledger, payment(99), budgets(sample.window))).toEqual(state);
   });
@@ -287,13 +301,14 @@ describe("exact cached budget state", () => {
     expect(assertParity(ledger, payment(99), budgets("24h"))).toEqual(state);
   });
 
-  test("zero-value authorizations remain identifiable without creating spend", () => {
+  test("zero-value authorizations consume one payment count without creating spend", () => {
     const ledger = open();
     const original = payment(1, { amount: "0" });
     ledger.append(original);
     ledger.appendOutcome(observation(101, original.id, "confirmed", { txHash: "zero-value" }));
     const state = assertParity(ledger, original, budgets("1h"));
     expect(state.spent).toEqual({ perTask: "0", perAgent: "0", global: "0" });
+    expect(state.counts).toEqual({ perTask: "1", perAgent: "1", global: "1" });
     expect(state.reserved).toMatchObject({ amount: "0", txHash: "zero-value" });
     ledger.rebuildCache();
     expect(assertParity(ledger, original, budgets("1h"))).toEqual(state);
@@ -301,6 +316,37 @@ describe("exact cached budget state", () => {
 });
 
 describe("cached authorization and attempt semantics", () => {
+  test("confirmed retries outside the count window retain parity without consuming a new slot", () => {
+    const ledger = open();
+    const original = payment(1, {
+      ts: new Date(now - 3_600_001).toISOString(),
+      settlementStatus: "confirmed",
+      settlement_unknown: false,
+    });
+    ledger.append(original);
+    ledger.append(payment(2));
+    const config = parseConfig({
+      budgets: { perTask: null, perAgent: null, global: { maxPayments: 1, window: "1h" } },
+    });
+    const retry = payment(3, { paymentKey: original.paymentKey });
+    const state = assertParity(ledger, retry, config.budgets);
+    expect(state.counts.global).toBe("1");
+    expect(evaluateWithState(retry, state, config, now)).toEqual({ allowed: true });
+    expect(evaluateWithState(retry, state, config, now)).toEqual(
+      evaluate(retry, ledger.view(), config, now),
+    );
+    expect(
+      evaluateWithState(payment(4), assertParity(ledger, payment(4), config.budgets), config, now),
+    ).toMatchObject({
+      body: { reason: "global_payment_count", spent: "1" },
+    });
+    ledger.appendOutcome(observation(101, original.id, "unknown", { attemptedAt: original.ts }));
+    const afterRetry = assertParity(ledger, retry, config.budgets);
+    expect(afterRetry.counts).toEqual(state.counts);
+    ledger.rebuildCache();
+    expect(assertParity(ledger, retry, config.budgets)).toEqual(afterRetry);
+  });
+
   test("settlement observations for a blocked row cannot create a reusable reservation", () => {
     const ledger = open();
     const blocked = payment(1, {
@@ -521,6 +567,27 @@ describe("cached authorization and attempt semantics", () => {
 });
 
 describe("cache persistence and transaction safety", () => {
+  test.each(["amount", "count"])(
+    "a corrupted %s cache cannot commit an outcome or a negative contribution",
+    (field) => {
+      const path = diskPath();
+      const ledger = open(path);
+      const source = database(path);
+      const original = payment(1, { amount: field === "count" ? "0" : "7" });
+      ledger.append(original);
+      const expected = assertParity(ledger, original);
+      source.exec(`UPDATE cache_prefix SET ${field} = '0'`);
+      expect(() => ledger.appendOutcome(observation(101, original.id, "failed"))).toThrow(
+        "Cached contribution underflow",
+      );
+      expect(ledger.outcomes()).toEqual([]);
+      ledger.rebuildCache();
+      expect(assertParity(ledger, original)).toEqual(expected);
+      expect(ledger.appendOutcome(observation(101, original.id, "failed"))).toBe(true);
+      expect(assertParity(ledger, original).counts.global).toBe("0");
+    },
+  );
+
   test("rebuilds are repeatable and preserve all immutable records and policy states", () => {
     const ledger = open();
     const values = [
@@ -557,9 +624,9 @@ describe("cache persistence and transaction safety", () => {
     expect(assertParity(first, original)).toEqual(assertParity(second, original));
     expect(
       z
-        .object({ version: z.literal(2) })
+        .object({ version: z.literal(3) })
         .parse(old.prepare("SELECT MAX(version) AS version FROM schema_version").get()).version,
-    ).toBe(2);
+    ).toBe(3);
   });
 
   test("already-open v1 writers are caught up before cached reads and across new connections", () => {

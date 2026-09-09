@@ -54,6 +54,7 @@ const required = [
   ".gitignore",
   "migrations/001.sql",
   "migrations/002.sql",
+  "migrations/003.sql",
   "test/__snapshots__/export.test.ts.snap",
   ".changeset/README.md",
   ".changeset/config.json",

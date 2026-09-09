@@ -1,5 +1,11 @@
 # Taximeter
 
+## 0.3.0
+
+### Minor Changes
+
+- Show effective configuration and source layers in doctor, add validated atomic config editing with exact human amount inputs, and expose temporary start overrides. Enforce optional payment-count budgets using a schema-3 incremental cache with pre-migration backups, and return executable advisory fix hints for blocked payments. The dashboard remains read-only and displays count usage alongside amount usage.
+
 ## 0.2.2
 
 ### Patch Changes

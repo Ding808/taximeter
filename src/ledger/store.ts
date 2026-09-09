@@ -5,6 +5,7 @@ import { v7 } from "uuid";
 import { z } from "zod";
 import migration from "../../migrations/001.sql";
 import cacheMigration from "../../migrations/002.sql";
+import countMigration from "../../migrations/003.sql";
 import type { TaximeterConfig } from "../config";
 import {
   type Diagnostic,
@@ -19,6 +20,7 @@ import { LedgerCache } from "./cache";
 import { deriveEvents } from "./derive";
 
 const rowSchema = z.object({ payload: z.string() });
+const countRowSchema = z.object({ count: z.number().int().nonnegative() });
 
 /** Synchronous storage edge; money derivations remain pure in derive.ts. */
 export class Ledger {
@@ -42,20 +44,22 @@ export class Ledger {
             .get();
           if (!table) this.database.exec(migration);
           const version = z
-            .object({ version: z.union([z.literal(1), z.literal(2)]) })
+            .object({ version: z.union([z.literal(1), z.literal(2), z.literal(3)]) })
             .parse(
               this.database.prepare("SELECT MAX(version) AS version FROM schema_version").get(),
             );
-          if (version.version === 1) {
+          if (version.version !== 3) {
             if (table && path !== ":memory:") {
               process.stderr.write("Migrating ledger…\n");
-              const backup = backupLedger(path);
+              const backup = backupLedger(path, version.version);
               process.stderr.write(`Ledger backup saved: ${backup}\n`);
             }
-            this.database.exec(cacheMigration);
+            if (version.version === 1) this.database.exec(cacheMigration);
+            this.database.exec(countMigration);
           }
           const cache = new LedgerCache(this.database);
-          cache.synchronize();
+          if (version.version === 2) cache.rebuild();
+          else cache.synchronize();
           return cache;
         })
         .immediate();
@@ -113,18 +117,28 @@ export class Ledger {
   ): PolicyState {
     return this.transaction(() => {
       this.cache.synchronize();
+      const totals = {
+        perTask: budgets.perTask
+          ? this.cache.totals(proposed, "perTask", budgets.perTask.window, now)
+          : { amount: "0", count: "0" },
+        perAgent: budgets.perAgent
+          ? this.cache.totals(proposed, "perAgent", budgets.perAgent.window, now)
+          : { amount: "0", count: "0" },
+        global: budgets.global
+          ? this.cache.totals(proposed, "global", budgets.global.window, now)
+          : { amount: "0", count: "0" },
+      };
       return {
         reserved: this.cache.reservation(proposed.paymentKey),
         spent: {
-          perTask: budgets.perTask
-            ? this.cache.spent(proposed, "perTask", budgets.perTask.window, now)
-            : "0",
-          perAgent: budgets.perAgent
-            ? this.cache.spent(proposed, "perAgent", budgets.perAgent.window, now)
-            : "0",
-          global: budgets.global
-            ? this.cache.spent(proposed, "global", budgets.global.window, now)
-            : "0",
+          perTask: totals.perTask.amount,
+          perAgent: totals.perAgent.amount,
+          global: totals.global.amount,
+        },
+        counts: {
+          perTask: totals.perTask.count,
+          perAgent: totals.perAgent.count,
+          global: totals.global.count,
         },
       };
     });
@@ -133,6 +147,11 @@ export class Ledger {
   /** Rebuild disposable projections without modifying the append-only audit log. */
   rebuildCache(): void {
     this.transaction(() => this.cache.rebuild());
+  }
+
+  eventCount(): number {
+    return countRowSchema.parse(this.database.prepare("SELECT COUNT(*) AS count FROM events").get())
+      .count;
   }
 
   events() {
