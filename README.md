@@ -2,13 +2,9 @@
 
 A taximeter for your AI agents.
 
-```sh
-npx taximeter start
-```
-
 Taximeter records supported agent payments, checks budgets before forwarding them,
-and keeps an exact local ledger. Install from npm with the command above, or build
-from source with the quickstart below. Requires Node 20 or newer.
+and keeps an exact local ledger. Follow the [quickstart](#quickstart) to install
+the package or run a source checkout. Requires Node 20 or newer and npm.
 
 ## A 20-second demo
 
@@ -32,25 +28,43 @@ It adds exact rolling budgets, attribution, and a statement you can keep.
 
 ## Quickstart
 
-Open a terminal in this source checkout, with Node 20+ and npm installed.
+Choose one of the two setup paths below, then open the dashboard and connect your
+agent.
 
-1. Install the pinned dependencies.
+### Install (recommended)
 
-   ```sh
-   npm ci
-   ```
+```sh
+npm install -g taximeter
+taximeter start
+```
 
-2. Build the CLI and dashboard.
+The npm package includes the built CLI and dashboard; no build step is needed.
+Use `taximeter` or its shorter alias `txm` for the commands below.
 
-   ```sh
-   npm run build
-   ```
+### Run from source
 
-3. Start the meter with its default configuration.
+```sh
+git clone https://github.com/Ding808/taximeter.git
+cd taximeter
+npm install
+npm run build
+node dist/cli/index.js start
+```
 
-   ```sh
-   node dist/cli/index.js start
-   ```
+Cloning and installing dependencies do not add this checkout's CLI to your global
+commands. For **every command below**, replace `taximeter` (or `txm`) with
+`node dist/cli/index.js` while in this checkout. For example, in another terminal:
+
+```sh
+node dist/cli/index.js doctor
+node dist/cli/index.js config get budgets.global.amount
+```
+
+To make the global `taximeter` and `txm` commands run this checkout, run `npm link`
+after building. A separately installed global command otherwise runs its own
+installed copy.
+
+### Open the dashboard
 
 You should now see:
 
@@ -64,8 +78,9 @@ HTTPS CONNECT is unmetered; use --upstream or withMeter for HTTPS payments.
 
 Open [the local dashboard](http://127.0.0.1:8403). It explains how to connect an
 agent before the first payment arrives. Stop the process with Ctrl+C.
-The prebuilt npm package starts directly; installing it does not build the frontend.
 Dependency download time depends on the connection.
+
+### Connect your agent
 
 Choose the connection mode your agent supports:
 
@@ -82,8 +97,10 @@ does not universally honor proxy environment variables. SDK transports can also
 follow redirects or retry internally: these hidden requests are outside host policy
 checks. Use `redirect: "error"` when each destination must be checked.
 
-From the checkout, use `node dist/cli/index.js` in place of the installed `taximeter`
-or `txm` command. The CLI provides:
+### CLI commands
+
+These examples use the installed `taximeter` command. Source users should follow
+the command substitution in [Run from source](#run-from-source).
 
 | Command | Result |
 | --- | --- |
@@ -103,6 +120,8 @@ or `txm` command. The CLI provides:
 
 ## Changing limits
 
+### Inspect and edit limits
+
 Check the effective configuration first, then change the limit and restart:
 
 ```sh
@@ -121,6 +140,8 @@ the source layers, and local checks. It does not inspect an already-running
 process or recover the flags used to start it. `config show --json` prints just
 the resolved configuration.
 
+### Amounts and payment counts
+
 Use human units for amounts: `5USDC`, `"5 USDC"`, and `5usdc` all store
 `"5000000"`; `0.001USDC` stores `"1000"`. A bare integer such as `5000000` is
 always an atomic-unit value. Conversion uses the offline asset registry and
@@ -135,6 +156,8 @@ Unknown settlements reserve both; blocked or known-failed payments consume neith
 Zero-amount payments still count. Reusing the same reservation does not count twice.
 Count limits are optional and off by default; they are rolling budgets, not a
 payments-per-second rate limiter.
+
+### Configuration files and precedence
 
 Keep conservative defaults in `~/.taximeter/config.json`, then override selected
 values per project in `taximeter.config.json`. Files merge **key by key**, so a
@@ -161,6 +184,8 @@ both the patch and the merged result before replacing the file atomically throug
 a temporary file in the same directory, created with mode `0o600`. Invalid values
 or unknown keys leave the original file unchanged; misspelled keys get a suggestion.
 
+### Temporary overrides
+
 For a single run, override limits without saving them:
 
 ```sh
@@ -173,6 +198,8 @@ Also available: `--budget-task`, `--budget-agent`, `--max-payments-task`,
 list for the run. Startup prints every active flag override. A flag can enable
 a disabled budget; when no asset is inherited, it uses USDC.
 
+### Count-only budgets
+
 A fully resolved budget can contain only `maxPayments`, with no amount limit.
 Because file omissions inherit lower settings, adding `maxPayments` alone does
 not remove an inherited amount limit. To establish a count-only budget across
@@ -180,6 +207,8 @@ layers, disable that scope in the lower file, then set `{ "asset": "USDC",
 "maxPayments": 200 }` in the higher file. Alternatively, disable the stored scope
 and enable it for one run with `--max-payments-global 200` (or its task/agent flag).
 Use `doctor` to confirm the resulting amount and window before starting.
+
+### Suggested fixes for blocked payments
 
 Blocked responses include an advisory `fix` command; the terminal prints it once
 per reason per process. Numeric hints raise the affected bound enough for that
@@ -240,6 +269,8 @@ as text to prevent a spreadsheet application from rounding them.
 
 ## Configuration
 
+### Upgrade and rollback
+
 Before upgrading, stop **all proxy and SDK writers**, then upgrade them together.
 Opening a schema-1 (0.1.x) or schema-2 (0.2.x) ledger prints `Migrating ledger…`,
 saves a standalone backup beside it at
@@ -257,6 +288,8 @@ Backups are retained until you remove them; a `ledger.partial.db` file means the
 backup did not finish and must not be used for rollback. Progress goes to stderr,
 so JSON report/export output stays machine-readable. Parsed unknown assets now
 require an explicit opt-in as described below.
+
+### Defaults and overrides
 
 No file is required. Start from [the example](taximeter.config.example.json) when
 needed. Precedence, highest first: flags, environment, explicit `--config` file,
@@ -289,6 +322,8 @@ All commands accept `--db` and `--config`. Start also accepts `--proxy-port`,
 `--dashboard-port`, and `--upstream`. Environment overrides are `TAXIMETER_DB`,
 `TAXIMETER_PORT`, and `TAXIMETER_DASHBOARD_PORT`.
 
+### Asset matching and attribution
+
 Missing task/agent labels share an **Unattributed** bucket. Supply `Taximeter-Task`
 and `Taximeter-Agent` headers, or SDK options. The offline asset registry recognizes
 USDC by its network and contract on Base and Base Sepolia. Parsed payments for
@@ -300,6 +335,8 @@ Custom-token budgets require `policy.unknownAsset: "allow"`. This opts in to par
 unknown assets, which remain separate atomic-unit balances with unknown decimals.
 Configure budgets using the exact contract address and, when needed, its network.
 Default USDC budgets do not cap these assets; only matching budgets and caps apply.
+
+### Blocked responses
 
 A denied replay receives HTTP 402 before it reaches the upstream. For a cap of
 140 atomic units already fully consumed, the response is:
