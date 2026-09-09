@@ -1,0 +1,73 @@
+{
+  "result": "passed",
+  "testnetOnly": true,
+  "timestamp": "2026-09-09T01:23:12.542Z",
+  "network": "eip155:84532",
+  "chainId": 84532,
+  "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  "amountAtomic": "1000",
+  "payer": "0x0de3422c62F3D8De0816dB0d838D47b452cb33EE",
+  "recipient": "0x10da2B4DD7012E8a3777959DD0a0BbAC917153ca",
+  "packageVersions": {
+    "taximeter": "0.2.2",
+    "x402": "2.25.0",
+    "viem": "2.56.3",
+    "express": "5.2.1"
+  },
+  "transport": {
+    "mode": "actual CLI explicit upstream proxy",
+    "upstream": "local HTTP Express",
+    "facilitator": "https://x402.org/facilitator",
+    "rpc": "https://sepolia.base.org",
+    "proxyPort": 50015,
+    "dashboardPort": 50016
+  },
+  "receipt": {
+    "hash": "0x10dc76728133356363ad1dd8d694a5e1eee2086fc3325ca572d3d035e7062c58",
+    "blockHash": "0x5fc419afd6dc2b27ceab4d51c6f17d5862f46ba6e0da1cb04f5d7c77ae90b700",
+    "blockNumber": "46574350",
+    "status": "success",
+    "confirmations": 2,
+    "initialReportedBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "canonicalBlockHash": "0x5fc419afd6dc2b27ceab4d51c6f17d5862f46ba6e0da1cb04f5d7c77ae90b700",
+    "observedChainHeight": "46574351",
+    "receiptReadAttempts": 2,
+    "matchingTransferLogs": 1,
+    "explorer": "https://sepolia.basescan.org/tx/0x10dc76728133356363ad1dd8d694a5e1eee2086fc3325ca572d3d035e7062c58"
+  },
+  "balances": {
+    "payerBefore": "19999000",
+    "payerAfter": "19998000",
+    "recipientBefore": "1000",
+    "recipientAfter": "2000"
+  },
+  "counts": {
+    "transportUnsigned": 2,
+    "transportSigned": 2,
+    "challenges": 2,
+    "serverSigned": 1,
+    "verify": 1,
+    "settle": 1,
+    "settled": 1,
+    "handler": 1,
+    "sdkErrors": 0
+  },
+  "blocked": {
+    "error": "blocked_by_taximeter",
+    "reason": "global_budget",
+    "budget": "1000",
+    "spent": "1000",
+    "remaining": "0"
+  },
+  "ledger": {
+    "confirmedAmount": "1000",
+    "unknownAmount": "0",
+    "observedEvents": 1,
+    "blockedEvents": 1,
+    "diagnostics": 0
+  },
+  "elapsedMs": 7757,
+  "database": "E:\\Taximeter-E2E\\live-run-UaXcMj\\ledger.db",
+  "scope": "Real testnet transfer and L2 inclusion; no mainnet funds and no claim of Ethereum finality. Raw authorizations are retained only in the local ledger, excluded from this evidence.",
+  "cleanup": "CLI and Express closed successfully"
+}

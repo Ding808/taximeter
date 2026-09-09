@@ -1,0 +1,30 @@
+{
+  "result": "passed",
+  "verification": "Independent read-only canonical receipt and block lookup",
+  "timestamp": "2026-09-09T01:11:44.400Z",
+  "sourceEvidence": "E:\\Taximeter-E2E\\live-run-yfOIsv\\evidence.json",
+  "originalReceiptBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "testnetOnly": true,
+  "network": "eip155:84532",
+  "chainId": 84532,
+  "rpc": "https://sepolia.base.org",
+  "receipt": {
+    "hash": "0x224ae6b305b47ab09af4ea3e52451505a8cc4bad5817fe9f31e108dcbf673134",
+    "status": "success",
+    "blockHash": "0x4ec497742f72bcedcc55b13c6d9772e5bf9c6d923fc6fbd672f59c38ebd3b551",
+    "blockNumber": "46573895",
+    "canonicalBlockContainsTransaction": true,
+    "latestObservedBlockNumber": "46574008",
+    "confirmationsAtObservation": "114"
+  },
+  "transfer": {
+    "asset": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+    "payer": "0x0de3422c62F3D8De0816dB0d838D47b452cb33EE",
+    "recipient": "0x10da2B4DD7012E8a3777959DD0a0BbAC917153ca",
+    "amountAtomic": "1000",
+    "logIndex": 10,
+    "removed": false,
+    "matchingTransferLogs": 1
+  },
+  "scope": "Public RPC evidence of Base Sepolia L2 inclusion and the exact token transfer. This does not establish Ethereum finality or independently validate RPC consensus. No key was read and no transaction was signed, submitted, or retried."
+}
