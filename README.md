@@ -10,6 +10,8 @@ Taximeter records supported agent payments, checks budgets before forwarding the
 and keeps an exact local ledger. Install from npm with the command above, or build
 from source with the quickstart below. Requires Node 20 or newer.
 
+Built with AI, with an auditable record of the [specification](https://github.com/Ding808/taximeter/blob/main/SPEC.md), [protocol corrections](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md), [decisions](https://github.com/Ding808/taximeter/blob/main/DECISIONS.md), [verification](https://github.com/Ding808/taximeter/blob/main/VERIFICATION.md), and [reproducible benchmarks](https://github.com/Ding808/taximeter/tree/main/benchmarks).
+
 ## A 20-second demo
 
 ![Taximeter meters a real testnet payment and blocks the next payment](docs/demo.gif)
