@@ -1,5 +1,14 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+} from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -67,6 +76,10 @@ const outcomeSchema = z.object({
 const prefixRootSchema = z.object({
   partitionKey: z.string(),
   amount: z.string().regex(/^(0|[1-9][0-9]*)$/),
+  count: z
+    .string()
+    .regex(/^(0|[1-9][0-9]*)$/)
+    .optional(),
 });
 const partitionKeySchema = z.tuple([
   z.enum(["perTask", "perAgent", "global"]),
@@ -174,9 +187,15 @@ function cacheStatistics(database, observedPayments, partitions) {
     const rows = countSchema.parse(
       reader.prepare("SELECT COUNT(*) AS count FROM cache_prefix").get(),
     ).count;
+    const hasCounts =
+      reader
+        .prepare("SELECT name FROM pragma_table_info('cache_prefix') WHERE name = 'count'")
+        .get() !== undefined;
     const partitionsByScope = { perTask: 0, perAgent: 0, global: 0 };
     for (const input of reader
-      .prepare("SELECT partitionKey, amount FROM cache_prefix WHERE prefix = ''")
+      .prepare(
+        `SELECT partitionKey, amount${hasCounts ? ", count" : ""} FROM cache_prefix WHERE prefix = ''`,
+      )
       .iterate()) {
       const row = prefixRootSchema.parse(input);
       const [scope, label] = partitionKeySchema.parse(JSON.parse(row.partitionKey));
@@ -202,6 +221,8 @@ function cacheStatistics(database, observedPayments, partitions) {
         (expectedCount * BigInt(amount)).toString(),
         `Incorrect ${scope} root total`,
       );
+      if (hasCounts)
+        assert.equal(row.count, expectedCount.toString(), `Incorrect ${scope} root payment count`);
       partitionsByScope[scope] += 1;
     }
     assert.deepEqual(partitionsByScope, {
@@ -213,6 +234,7 @@ function cacheStatistics(database, observedPayments, partitions) {
       rows,
       partitions: partitionsByScope.perTask + partitionsByScope.perAgent + partitionsByScope.global,
       partitionsByScope,
+      countsVerified: hasCounts,
     };
   } finally {
     reader.close();
@@ -392,13 +414,19 @@ function benchmarkBatch(api, parent, historyPayments, measuredPayments, batch, p
 
     const rejected = meter.begin(exchange(historyPayments + measuredPayments, partitions).request);
     assert.equal(rejected.payment, undefined);
-    assert.deepEqual(rejected.body, {
+    const { fix, ...blocked } = rejected.body;
+    assert.deepEqual(blocked, {
       error: "blocked_by_taximeter",
       reason: "global_budget",
       budget: expectedAmount,
       spent: expectedAmount,
       remaining: "0",
     });
+    if (fix !== undefined)
+      assert.equal(
+        fix,
+        `taximeter config set budgets.global.amount ${BigInt(expectedAmount) + BigInt(amount)}`,
+      );
     const walBytesBeforeClose = bytes(`${database}-wal`);
     ledger.close();
     ledger = undefined;
@@ -508,6 +536,7 @@ bounded JavaScript memory; the selected entry's own intake memory is unchanged.`
       platform: process.platform,
       architecture: process.arch,
       entry,
+      entrySha256: createHash("sha256").update(readFileSync(entry)).digest("hex"),
       packageVersion: z.string().parse(api.version),
       historyCounts: options.counts,
       paymentsPerBatch: options.payments,

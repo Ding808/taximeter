@@ -8,11 +8,61 @@ export type Scope = "perTask" | "perAgent" | "global";
 export type PolicyState = {
   reserved: PaymentEvent | undefined;
   spent: Record<Scope, string>;
+  counts: Record<Scope, string>;
 };
 const windows = { "1h": 3_600_000, "24h": 86_400_000, "7d": 604_800_000, "30d": 2_592_000_000 };
+const amountReasons = {
+  perTask: "per_task_budget",
+  perAgent: "per_agent_budget",
+  global: "global_budget",
+} as const;
+const countReasons = {
+  perTask: "per_task_payment_count",
+  perAgent: "per_agent_payment_count",
+  global: "global_payment_count",
+} as const;
+const fixedRemedies = {
+  host_denied: 'taximeter config set policy.denyHosts "[]"',
+  host_not_allowed: 'taximeter config set policy.allowHosts "[]"',
+  recipient_not_allowed: 'taximeter config set policy.allowPayTo "[]"',
+  unknown_asset: "taximeter config set policy.unknownAsset allow",
+} as const;
+const limitKeys = {
+  max_single_payment: "policy.maxSinglePayment",
+  per_task_budget: "budgets.perTask.amount",
+  per_agent_budget: "budgets.perAgent.amount",
+  global_budget: "budgets.global.amount",
+  per_task_payment_count: "budgets.perTask.maxPayments",
+  per_agent_payment_count: "budgets.perAgent.maxPayments",
+  global_payment_count: "budgets.global.maxPayments",
+} as const;
+type DenyReason = keyof typeof fixedRemedies | keyof typeof limitKeys;
 
-function deny(reason: string, budget: string | null = null, spent = "0"): Decision {
+function deny(
+  reason: DenyReason,
+  budget: string | null = null,
+  spent = "0",
+  increment = 0n,
+): Decision {
   const difference = budget === null ? null : BigInt(budget) - BigInt(spent);
+  let fix: string;
+  if (reason in fixedRemedies) {
+    fix = fixedRemedies[reason as keyof typeof fixedRemedies];
+  } else {
+    const key = limitKeys[reason as keyof typeof limitKeys];
+    const minimum = BigInt(budget as string) + 1n;
+    const needed = BigInt(spent) + increment;
+    const next = needed > minimum ? needed : minimum;
+    const countLimit = key.endsWith(".maxPayments");
+    const representable = countLimit
+      ? next <= BigInt(Number.MAX_SAFE_INTEGER)
+      : next.toString().length <= 78;
+    // At the schema ceiling, disabling the affected limit is the only valid relaxation.
+    const target = key.startsWith("budgets.") ? key.slice(0, key.lastIndexOf(".")) : key;
+    fix = representable
+      ? `taximeter config set ${key} ${next}`
+      : `taximeter config set ${target} null`;
+  }
   return {
     allowed: false,
     body: {
@@ -21,6 +71,7 @@ function deny(reason: string, budget: string | null = null, spent = "0"): Decisi
       budget,
       spent,
       remaining: difference === null ? null : (difference < 0n ? 0n : difference).toString(),
+      fix,
     },
   };
 }
@@ -32,8 +83,30 @@ export function spentForBudget(
   scope: Scope,
   now: number,
 ): string {
+  return totalsForBudget(proposed, events, budget, scope, now).amount;
+}
+
+/** Full replay reference for tests, exports, and rebuilding derived state. */
+export function countForBudget(
+  proposed: PaymentEvent,
+  events: PaymentEvent[],
+  budget: Budget,
+  scope: Scope,
+  now: number,
+): string {
+  return totalsForBudget(proposed, events, budget, scope, now).count;
+}
+
+export function totalsForBudget(
+  proposed: PaymentEvent,
+  events: PaymentEvent[],
+  budget: Budget,
+  scope: Scope,
+  now: number,
+): { amount: string; count: string } {
   const start = budget.window ? now - windows[budget.window] : -Infinity;
   let spent = 0n;
+  let count = 0n;
   for (const event of deriveEvents(events)) {
     if (!countsAsSpend(event) || assetKey(event) !== assetKey(proposed)) continue;
     const ts = Date.parse(event.attemptedAt ?? event.ts);
@@ -41,8 +114,9 @@ export function spentForBudget(
     if (scope === "perTask" && event.taskId !== proposed.taskId) continue;
     if (scope === "perAgent" && event.agentId !== proposed.agentId) continue;
     spent += BigInt(event.amount);
+    count += 1n;
   }
-  return spent.toString();
+  return { amount: spent.toString(), count: count.toString() };
 }
 
 /** Pure, synchronous budget decision. The caller must reserve in the same transaction. */
@@ -52,23 +126,23 @@ export function evaluate(
   config: TaximeterConfig,
   now: number,
 ): Decision {
+  const spent: Record<Scope, string> = { perTask: "0", perAgent: "0", global: "0" };
+  const counts: Record<Scope, string> = { perTask: "0", perAgent: "0", global: "0" };
+  for (const scope of ["perTask", "perAgent", "global"] as const) {
+    const budget = config.budgets[scope];
+    if (!budget) continue;
+    const total = totalsForBudget(proposed, events, budget, scope, now);
+    spent[scope] = total.amount;
+    counts[scope] = total.count;
+  }
   return evaluateWithState(
     proposed,
     {
       reserved: events.find(
         (event) => event.paymentKey === proposed.paymentKey && countsAsSpend(event),
       ),
-      spent: {
-        perTask: config.budgets.perTask
-          ? spentForBudget(proposed, events, config.budgets.perTask, "perTask", now)
-          : "0",
-        perAgent: config.budgets.perAgent
-          ? spentForBudget(proposed, events, config.budgets.perAgent, "perAgent", now)
-          : "0",
-        global: config.budgets.global
-          ? spentForBudget(proposed, events, config.budgets.global, "global", now)
-          : "0",
-      },
+      spent,
+      counts,
     },
     config,
     now,
@@ -105,7 +179,7 @@ export function evaluateWithState(
     matchesAsset(policy.maxSingleAsset, proposed) &&
     BigInt(proposed.amount) > BigInt(policy.maxSinglePayment)
   )
-    return deny("max_single_payment", policy.maxSinglePayment);
+    return deny("max_single_payment", policy.maxSinglePayment, "0", BigInt(proposed.amount));
 
   const reserved = state.reserved && countsAsSpend(state.reserved) ? state.reserved : undefined;
   for (const scope of ["perTask", "perAgent", "global"] as const) {
@@ -120,18 +194,18 @@ export function evaluateWithState(
     const reservedTime = reserved ? Date.parse(reserved.attemptedAt ?? reserved.ts) : -Infinity;
     const inWindow =
       reservedTime <= now && (!budget.window || reservedTime >= now - windows[budget.window]);
-    const increment =
-      reserved && (reserved.settlementStatus === "confirmed" || inWindow)
-        ? 0n
-        : BigInt(proposed.amount);
-    if (BigInt(spent) + increment > BigInt(budget.amount)) {
-      const reason =
-        scope === "perTask"
-          ? "per_task_budget"
-          : scope === "perAgent"
-            ? "per_agent_budget"
-            : "global_budget";
-      return deny(reason, budget.amount, spent);
+    const countIncrement =
+      reserved && (reserved.settlementStatus === "confirmed" || inWindow) ? 0n : 1n;
+    const increment = countIncrement * BigInt(proposed.amount);
+    if (budget.amount !== undefined && BigInt(spent) + increment > BigInt(budget.amount)) {
+      return deny(amountReasons[scope], budget.amount, spent, increment);
+    }
+    const count = state.counts[scope];
+    if (
+      budget.maxPayments !== undefined &&
+      BigInt(count) + countIncrement > BigInt(budget.maxPayments)
+    ) {
+      return deny(countReasons[scope], budget.maxPayments.toString(), count, countIncrement);
     }
   }
   return { allowed: true };

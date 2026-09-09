@@ -1342,3 +1342,97 @@ incompatible format migration and accounting-preserving archive design are neede
 After committing the verified candidate, `git status --porcelain` printed nothing.
 Dependencies, builds, coverage, packed archives, and local example state stayed
 ignored. The evidence and reproduction sources were the intentional additions.
+
+## 0.3.0 — visible configuration and payment-count budgets (2026-09-09)
+
+The automated suite passes **493 tests in 28 files**. The separate live-example
+proof-helper suite passes **8 tests**; these are offline proof-validation tests,
+not a new on-chain transfer. Typecheck and lint pass. Ledger coverage is **100%**
+statements/functions/lines and **96.56%** branches, above the previous 95.87%
+branch result. Policy coverage remains **100%** in all four metrics.
+
+Coverage of the new behavior is explicit:
+
+- `config-visibility.test.ts` and `config-cli.test.ts`: layer contributions and
+  overridden keys, empty allow-list meanings, doctor JSON/loader agreement,
+  common CLI options, and every new startup override.
+- `config-edit.test.ts`: human/atomic amounts, unknown symbols, typo suggestions,
+  byte-identical files after invalid edits, merged-config errors with full paths,
+  target-layer asset context, same-directory atomic replacement, mode `0o600`,
+  and original-file preservation with temporary-file cleanup on rename failure.
+- `payment-count-policy.test.ts`, `ledger-cache.test.ts`, and `hot-path.test.ts`:
+  amount-before-count order in each scope, count-only schemas, zero-value payments,
+  blocked/failed exclusion, retries, windows, asset/network matching, exact replay
+  parity, and payment gating without loading the historical event arrays.
+- `ledger-migration.test.ts`: schema-1/2 backups precede migration, include WAL
+  records, and survive failed upgrades; a caught-up v2 cursor still rebuilds
+  matching v3 counts. Old schema guards accept the backup and reject v3.
+- `count-only-integration.test.ts`: the resolved configuration reaches the Meter
+  and actual HTTP proxy without silently restoring default amount limits/windows.
+- `blocked-notice.test.ts` and `config-cli.test.ts`: once-per-reason notices across
+  meter instances, console-failure isolation, a real CLI proxy blocking its sixth
+  payment under a temporary five-payment cap, unchanged configuration files,
+  verbatim numeric fix execution, and enforcement changing only after restart.
+- `server.test.ts` and `ui.test.ts`: amount/count and count-only summaries, empty
+  states, and rejection of dashboard configuration mutation routes. A browser
+  visual check also confirmed a count-only dashboard showing 4/5 payments and
+  all-time usage with no configuration controls.
+
+The packed **taximeter-0.3.0.tgz** passed the content checker: **216,779 compressed
+bytes**, **576,216 unpacked bytes**, **16 files**, and all seven relative Markdown
+file links resolving within the archive. Development documents, test sources,
+local database/config files, and UI source maps remain excluded.
+
+The extended package smoke test starts the installed tarball under an isolated
+home and npm cache. It verifies default loopback listeners and prebuilt assets,
+then runs the installed `doctor --json`, `config set`, and `config get` commands.
+`200USDC` is stored as `"200000000"`, doctor JSON agrees, and the already-running
+dashboard retains its original limit until restart. Owned processes and the
+temporary workspace are cleaned up. The existing prebuild-install deprecation
+and two Zod PURE-comment build warnings remain non-fatal.
+
+### Reproduce the many-group performance comparison
+
+Build first, then run the committed harness with the same settings as the 0.2.1
+many-group baseline:
+
+```sh
+npm ci
+npm run build
+node scripts/benchmark-ledger.mjs --counts 50000,500000 --payments 100 --batches 1 --progress-every 5000 --task-partitions 1000 --agent-partitions 100
+```
+
+JSON goes to stdout and progress to stderr. Results are committed in
+[ledger-0.3.0-many.jsonl](benchmarks/ledger-0.3.0-many.jsonl), with the built entry's
+SHA-256, runtime, parameters, database sizes, and correctness checks. The harness
+now also verifies exact payment-count roots in every populated partition when
+the count column exists; older baseline entries remain supported. Final source
+replay verifies amounts independently of the cache.
+
+Both runs used Node v24.13.0 on Windows x64, 1,000 task partitions, 100 agent
+partitions, and one batch of 100 measured payments per history size. The 0.2.1
+baseline is [ledger-0.2.1-many.jsonl](benchmarks/ledger-0.2.1-many.jsonl).
+
+| Historical payments | 0.2.1 median | 0.3.0 median | Change | 0.2.1 p95 | 0.3.0 p95 | Change |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 50,000 | 3.763 ms | 4.023 ms | +6.9% | 4.881 ms | 5.942 ms | +21.7% |
+| 500,000 | 3.994 ms | 3.640 ms | -8.9% | 7.624 ms | 5.227 ms | -31.4% |
+
+At 500,000 historical payments, reopening took 2.158 ms and the database after
+the measured batch was **3,020,705,792 bytes** (about 3.02 GB), compared with
+2,996,031,488 bytes in the baseline. The cache contained 6,054,078 prefix rows
+across 1,101 partitions. Exact amount replay and all populated partition count
+roots matched at both history sizes; each result reports `countsVerified: true`.
+
+The larger history did not increase the median or p95 in this run. This is one
+small timing sample at each size, with no warmup, on a shared Windows machine:
+it does not establish a speedup, statistical significance, or constant tail
+latency. The 50k p95 regression remains visible above. Compare this many-group
+run with the many-group baseline, not the earlier single-group 3.3 ms figure.
+Timing covers the local `Meter.begin`/`Meter.complete` path, including serialized
+write transactions; it is not an end-to-end network throughput measurement.
+
+As in the baseline, historical fixtures omit attempt/outcome rows. The measured
+payments include their real reservation/settlement outcomes, but the historical
+database sizes remain optimistic compared with equivalent live traffic. This
+release adds no retention or compaction, and retained storage continues to grow.

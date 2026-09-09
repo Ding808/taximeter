@@ -11,7 +11,7 @@ import { request as httpsRequest } from "node:https";
 import { connect, Socket } from "node:net";
 import type { Duplex } from "node:stream";
 import { z } from "zod";
-import { parseConfig, type TaximeterConfig } from "../config";
+import { configSchema, type TaximeterConfig } from "../config";
 import { Meter } from "../core";
 import type { Ledger } from "../ledger/store";
 import { httpUrlSchema } from "../model";
@@ -106,7 +106,7 @@ function json(response: ServerResponse, status: number, body: unknown): void {
 }
 
 export function createProxy(options: { ledger: Ledger; config: TaximeterConfig }): Server {
-  const config = parseConfig(options.config);
+  const config = configSchema.parse(options.config);
   const meter = new Meter(options.ledger, config);
   const server = createServer({ requestTimeout: 0 }, (request, response) => {
     let target: Target;

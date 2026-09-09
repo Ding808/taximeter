@@ -2,17 +2,27 @@ import { existsSync, renameSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Command } from "commander";
 import { z } from "zod";
-import { loadConfig, portInputSchema } from "../config/io";
+import { formatEffectiveConfig, formatLayers } from "../config/display";
+import { configError } from "../config/edit";
+import {
+  type ConfigLoadOptions,
+  loadConfig,
+  loadConfigDetails,
+  portInputSchema,
+} from "../config/io";
 import { toCsv, toInvoice, toJson } from "../export";
 import { formatAmount, totals } from "../ledger/derive";
 import { Ledger } from "../ledger/store";
 import { httpUrlSchema, labelSchema } from "../model";
 import { acquireLock, assertStopped, startServices } from "../server/lifecycle";
 import { version } from "../version";
+import { addConfigCommands, valueText } from "./config-command";
+import { overridesSchema, startOverrides } from "./start-overrides";
 
 const common = z.strictObject({ db: z.string().optional(), config: z.string().optional() });
 const port = portInputSchema.optional();
 const startFlags = common.extend({
+  ...overridesSchema.shape,
   proxyPort: port,
   dashboardPort: port,
   upstream: httpUrlSchema.optional(),
@@ -40,14 +50,17 @@ function options(command: Command): Command {
     .option("--db <path>", "SQLite ledger path")
     .option("--config <path>", "Explicit config file");
 }
-function configFrom(flags: z.infer<typeof common>) {
-  return loadConfig(flags.db ? { db: flags.db } : {}, { configFile: flags.config });
-}
-
 export async function runCli(
   input: string[],
   output: (text: string) => void = (text) => process.stdout.write(text),
+  sources: ConfigLoadOptions = {},
 ): Promise<void> {
+  const sourceOptions = (flags: z.infer<typeof common>) => ({
+    ...sources,
+    configFile: flags.config ?? sources.configFile,
+  });
+  const configFrom = (flags: z.infer<typeof common>) =>
+    loadConfig(flags.db ? { db: flags.db } : {}, sourceOptions(flags));
   const argv = z.array(z.string()).parse(input);
   const program = new Command()
     .name("taximeter")
@@ -59,10 +72,32 @@ export async function runCli(
     .option("--proxy-port <port>", "Proxy port (0 selects an available port)")
     .option("--dashboard-port <port>", "Dashboard port")
     .option("--upstream <url>", "Forward origin-form requests to this HTTP(S) upstream")
+    .option(
+      "--budget-global <amount>",
+      "Override the global amount budget (atomic units or e.g. 5USDC)",
+    )
+    .option("--budget-task <amount>", "Override the per-task amount budget")
+    .option("--budget-agent <amount>", "Override the per-agent amount budget")
+    .option("--max-payments-global <n>", "Override the global payment-count limit")
+    .option("--max-payments-task <n>", "Override the per-task payment-count limit")
+    .option("--max-payments-agent <n>", "Override the per-agent payment-count limit")
+    .option("--max-single <amount>", "Override the single-payment limit")
+    .option(
+      "--allow-host <host>",
+      "Allow a host (repeatable; replaces the file's allow-list)",
+      (value: string, previous: string[] = []) => [...previous, value],
+    )
+    .option(
+      "--deny-host <host>",
+      "Deny a host (repeatable; replaces the file's deny-list)",
+      (value: string, previous: string[] = []) => [...previous, value],
+    )
     .action(async (raw: unknown) => {
       const flags = startFlags.parse(raw);
+      const overrides = startOverrides(flags, configFrom(flags));
       const config = loadConfig(
         {
+          ...overrides.patch,
           ...(flags.db ? { db: flags.db } : {}),
           ...(flags.upstream ? { upstream: flags.upstream } : {}),
           ports: {
@@ -70,12 +105,23 @@ export async function runCli(
             ...(flags.dashboardPort !== undefined ? { dashboard: flags.dashboardPort } : {}),
           },
         },
-        { configFile: flags.config },
+        sourceOptions(flags),
       );
       const running = await startServices(config);
       output(
         `Taximeter ${version}\nProxy: http://127.0.0.1:${running.proxyPort}\nDashboard: http://127.0.0.1:${running.dashboardPort}\nPoint an HTTP-proxy-aware agent at http://127.0.0.1:${running.proxyPort}.\nHTTPS CONNECT is unmetered; use --upstream or withMeter for HTTPS payments.\n`,
       );
+      const activeOverrides = [
+        ...overrides.active,
+        ...(flags.db !== undefined ? [{ key: "db", value: config.db }] : []),
+        ...(flags.upstream !== undefined ? [{ key: "upstream", value: config.upstream }] : []),
+        ...(flags.proxyPort !== undefined ? [{ key: "ports.proxy", value: flags.proxyPort }] : []),
+        ...(flags.dashboardPort !== undefined
+          ? [{ key: "ports.dashboard", value: flags.dashboardPort }]
+          : []),
+      ];
+      for (const active of activeOverrides)
+        output(`Override: ${active.key} = ${valueText(active.value)} (flags; not saved)\n`);
       const shutdown = () => {
         process.off("SIGINT", shutdown);
         process.off("SIGTERM", shutdown);
@@ -172,16 +218,28 @@ export async function runCli(
     });
   options(
     program.command("doctor").description("Check local config and SQLite without network requests"),
-  ).action((raw: unknown) => {
-    const config = configFrom(common.parse(raw));
-    const ledger = new Ledger(existsSync(config.db) ? config.db : ":memory:");
-    try {
-      output(
-        `Configuration: valid\nSQLite: ready (${ledger.events().length} events)\nLedger: ${config.db}\nListener binding: 127.0.0.1\nHTTPS CONNECT: unmetered\nNetwork checks: none\n`,
-      );
-    } finally {
-      ledger.close();
-    }
-  });
-  await program.parseAsync(argv, { from: "user" });
+  )
+    .option("--json", "Machine-readable configuration, sources, and local checks")
+    .action((raw: unknown) => {
+      const flags = common.extend({ json: z.boolean().optional() }).parse(raw);
+      const details = loadConfigDetails(flags.db ? { db: flags.db } : {}, sourceOptions(flags));
+      const config = details.config;
+      const ledger = new Ledger(existsSync(config.db) ? config.db : ":memory:");
+      try {
+        const events = ledger.eventCount();
+        output(
+          flags.json
+            ? `${JSON.stringify({ configuration: "valid", ...details, sqlite: { status: "ready", events }, ledger: config.db, listenerBinding: "127.0.0.1", httpsConnect: "unmetered", networkChecks: "none" }, null, 2)}\n`
+            : `Configuration: valid\n${formatLayers(details)}\n\n${formatEffectiveConfig(config)}\n\nSQLite: ready (${events} events)\nLedger: ${config.db}\nListener binding: 127.0.0.1\nHTTPS CONNECT: unmetered\nNetwork checks: none\n`,
+        );
+      } finally {
+        ledger.close();
+      }
+    });
+  addConfigCommands(program, output, sources);
+  try {
+    await program.parseAsync(argv, { from: "user" });
+  } catch (error) {
+    throw configError(error);
+  }
 }

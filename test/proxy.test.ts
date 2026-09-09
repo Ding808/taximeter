@@ -272,6 +272,7 @@ describe("native HTTP payment proxy", () => {
         budget: "140",
         spent: "140",
         remaining: "0",
+        fix: "taximeter config set budgets.global.amount 147",
       });
       expect(upstream.paid()).toBe(20);
       expect(ledger.events().filter((event) => event.status === "blocked")).toEqual([
