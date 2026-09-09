@@ -1,5 +1,5 @@
 import { v7 } from "uuid";
-import { parseConfig, type TaximeterConfig } from "./config";
+import { configSchema, type TaximeterConfig } from "./config";
 import type { Ledger } from "./ledger/store";
 import {
   type BlockedBody,
@@ -8,6 +8,7 @@ import {
   type PaymentEvent,
   paymentEventSchema,
 } from "./model";
+import { blockedNotice } from "./notices";
 import { evaluateWithState } from "./policy";
 import type { WireRequest, WireResponse } from "./rails/types";
 import { X402Rail } from "./rails/x402";
@@ -22,7 +23,7 @@ export class Meter {
     readonly ledger: Ledger,
     config: TaximeterConfig,
   ) {
-    this.config = parseConfig(config);
+    this.config = configSchema.parse(config);
     this.rail = new X402Rail({
       diagnostic: (code, resource, message) => this.diagnose(code, resource, message),
     });
@@ -42,7 +43,7 @@ export class Meter {
     const proposed = this.rail.parse(request);
     if (!proposed) return {};
     try {
-      return this.ledger.transaction(() => {
+      const intake: Intake = this.ledger.transaction(() => {
         const now = Date.now();
         const state = this.ledger.policyState(proposed, this.config.budgets, now);
         const decision = evaluateWithState(proposed, state, this.config, now);
@@ -73,6 +74,8 @@ export class Meter {
         this.ledger.appendOutcome(attempt);
         return { payment, attempt };
       });
+      if (intake.body) blockedNotice(intake.body);
+      return intake;
     } catch {
       this.diagnose(
         "storage_failed",

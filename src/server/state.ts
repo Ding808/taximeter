@@ -3,7 +3,7 @@ import type { TaximeterConfig } from "../config";
 import { countsAsSpend, totals } from "../ledger/derive";
 import type { Ledger } from "../ledger/store";
 import type { PaymentEvent } from "../model";
-import { spentForBudget } from "../policy";
+import { totalsForBudget } from "../policy";
 import { version } from "../version";
 import { dashboardStateSchema } from "./schema";
 
@@ -35,16 +35,25 @@ export function dashboardState(ledger: Ledger, config: TaximeterConfig, now = Da
           const representative = events.find(
             (event) => event.network === total.network && event.asset.toLowerCase() === total.asset,
           );
-          const spent = representative
-            ? spentForBudget(representative, events, budget, "global", now)
-            : "0";
-          const remaining = BigInt(budget.amount) - BigInt(spent);
+          const { amount: spent, count } = representative
+            ? totalsForBudget(representative, events, budget, "global", now)
+            : { amount: "0", count: "0" };
+          const remaining =
+            budget.amount === undefined ? null : BigInt(budget.amount) - BigInt(spent);
+          const countRemaining =
+            budget.maxPayments === undefined ? null : BigInt(budget.maxPayments) - BigInt(count);
           return {
             network: total.network,
             asset: total.asset,
-            limit: budget.amount,
+            limit: budget.amount ?? null,
             spent,
-            remaining: (remaining < 0n ? 0n : remaining).toString(),
+            remaining: remaining === null ? null : (remaining < 0n ? 0n : remaining).toString(),
+            count,
+            countLimit: budget.maxPayments?.toString() ?? null,
+            countRemaining:
+              countRemaining === null
+                ? null
+                : (countRemaining < 0n ? 0n : countRemaining).toString(),
             window: budget.window ?? null,
           };
         })

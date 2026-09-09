@@ -3,8 +3,8 @@ import { join, resolve } from "node:path";
 import Database from "better-sqlite3";
 
 /** Call while the source holds BEGIN IMMEDIATE, before any migration writes. */
-export function backupLedger(path: string): string {
-  const directory = mkdtempSync(`${resolve(path)}.backup-v1-`);
+export function backupLedger(path: string, version: 1 | 2): string {
+  const directory = mkdtempSync(`${resolve(path)}.backup-v${version}-`);
   const partial = join(directory, "ledger.partial.db");
   const destination = join(directory, "ledger.db");
   writeFileSync(partial, "", { flag: "wx", mode: 0o600 });

@@ -117,6 +117,7 @@ describe.each<Mode>(["proxy", "sdk"])("unknown-asset policy through %s", (mode) 
           budget: null,
           spent: "0",
           remaining: null,
+          fix: "taximeter config set policy.unknownAsset allow",
         });
         expect(forwarded()).toBe(before);
         expect(ledger.view()).toHaveLength(1);

@@ -181,15 +181,22 @@ function BudgetHero({ state, active }: { state: DashboardState; active: Total | 
     decimalsKnown: state.globalBudget?.asset === "USDC",
   };
   const displayed = budget?.spent ?? active?.amount ?? "0";
-  const limit = budget?.limit ?? (!active ? state.globalBudget?.amount : undefined);
+  const limit = budget?.limit ?? (!active ? state.globalBudget?.amount : undefined) ?? null;
+  const count = budget?.count ?? "0";
+  const countLimit =
+    budget?.countLimit ??
+    (!active ? state.globalBudget?.maxPayments?.toString() : undefined) ??
+    null;
+  const countRemaining = budget?.countRemaining ?? countLimit;
   const window = budget?.window ?? (!active ? state.globalBudget?.window : undefined);
   const remaining = budget?.remaining ?? limit;
   const percentage = limit ? percentOf(displayed, limit) : "0";
+  const countPercentage = countLimit ? percentOf(count, countLimit) : "0";
   return (
     <section className="budget-hero" aria-label="Current spend and budget">
       <div className="hero-value">
         <span className="eyebrow">
-          {budget || (!active && limit)
+          {budget || (!active && (limit !== null || countLimit !== null))
             ? `BUDGET SPEND${window ? ` · ${window.toUpperCase()}` : ""}`
             : "LEDGER TOTAL · ALL TIME"}
         </span>
@@ -206,35 +213,66 @@ function BudgetHero({ state, active }: { state: DashboardState; active: Total | 
         </p>
       </div>
       <div className="budget-detail">
-        <div className="budget-caption">
-          <span>{limit ? "Active global budget" : "No global budget for this asset"}</span>
-          <span className="mono">
-            {limit
-              ? `${amountText(limit, metadata)} ${active?.assetSymbol ?? state.globalBudget?.asset ?? ""}`
-              : "Uncapped"}
-          </span>
-        </div>
-        <div
-          className="budget-track"
-          role="img"
-          aria-label={
-            limit ? `${percentage}% of the active global budget used` : "No active budget meter"
-          }
-        >
-          <span style={{ width: `${percentage}%` }} />
-        </div>
-        <div className="budget-caption below">
-          <span>
-            {limit && remaining ? (
-              <>
-                <strong className="mono">{amountText(remaining, metadata)}</strong> remaining
-              </>
-            ) : (
-              "Asset balances are never combined."
-            )}
-          </span>
-          <span>{window ? `Rolling ${window}` : "All time"}</span>
-        </div>
+        {(limit !== null || countLimit === null) && (
+          <>
+            <div className="budget-caption">
+              <span>{limit ? "Active global budget" : "No global budget for this asset"}</span>
+              <span className="mono">
+                {limit
+                  ? `${amountText(limit, metadata)} ${active?.assetSymbol ?? state.globalBudget?.asset ?? ""}`
+                  : "Uncapped"}
+              </span>
+            </div>
+            <div
+              className="budget-track"
+              role="img"
+              aria-label={
+                limit ? `${percentage}% of the active global budget used` : "No active budget meter"
+              }
+            >
+              <span style={{ width: `${percentage}%` }} />
+            </div>
+            <div className="budget-caption below">
+              <span>
+                {limit && remaining ? (
+                  <>
+                    <strong className="mono">{amountText(remaining, metadata)}</strong> remaining
+                  </>
+                ) : (
+                  "Asset balances are never combined."
+                )}
+              </span>
+              <span>{window ? `Rolling ${window}` : "All time"}</span>
+            </div>
+          </>
+        )}
+        {countLimit !== null && (
+          <section
+            aria-label="Global payment-count budget"
+            style={{ marginTop: limit !== null ? "16px" : undefined }}
+          >
+            <div className="budget-caption">
+              <span>{limit === null ? "Active global payment-count budget" : "Payment count"}</span>
+              <span className="mono">
+                {count} / {countLimit} payments
+              </span>
+            </div>
+            <div
+              className="budget-track"
+              role="img"
+              aria-label={`${countPercentage}% of the active global payment-count budget used`}
+            >
+              <span style={{ width: `${countPercentage}%` }} />
+            </div>
+            <div className="budget-caption below">
+              <span>
+                <strong className="mono">{countRemaining}</strong>{" "}
+                {countRemaining === "1" ? "payment" : "payments"} remaining
+              </span>
+              <span>{window ? `Rolling ${window}` : "All time"}</span>
+            </div>
+          </section>
+        )}
         <p className="scope-note">Each network and token has its own balance.</p>
       </div>
     </section>
@@ -666,6 +704,7 @@ export function Dashboard({
         )}
         <footer className="page-footer">
           <span>Local ledger · x402 exact EIP-3009</span>
+          <span>Read-only dashboard</span>
           <span>HTTPS CONNECT is unmetered · updated {clockText(state.generatedAt)} UTC</span>
           <span className="mono">v{state.version}</span>
         </footer>

@@ -31,6 +31,7 @@ describe("policy (tests written before implementation)", () => {
         budget: null,
         spent: "0",
         remaining: null,
+        fix: "taximeter config set policy.unknownAsset allow",
       },
     });
   });
@@ -75,6 +76,7 @@ describe("policy (tests written before implementation)", () => {
         budget: "140",
         spent: "140",
         remaining: "0",
+        fix: "taximeter config set budgets.global.amount 147",
       },
     });
   });
