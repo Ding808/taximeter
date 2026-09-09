@@ -1,0 +1,2283 @@
+{
+  "recordedAt": "2026-09-09T01:26:06.535Z",
+  "node": "v24.13.0",
+  "platform": "win32",
+  "architecture": "x64",
+  "version": "0.2.2",
+  "entrySha256": "9d3702424bfd4f2ca49f29ba0a4058c8abbedd26aac8f78a68f784d3b92f0fe5",
+  "scriptSha256": "a73c94dffd9990d90a61931d10a466151962092f65aaebaebbe4b66a16fe78e6",
+  "note": "1000 synthetic v2 recognized payments per dataset through real begin+complete, with two outcome rows per payment; unique deterministic hash-derived signature/nonce/transaction fixture bytes; no keys/signing/network. Candidate clones are storage-layout prototypes, not compatible runtime implementations. Identity clone controls for repacking. Gzip level 6 / Brotli quality 4 encode each recorded raw string as a tagged base64 JSON object. Exact original raw and complete payment round-trips checked for every transformed record; cache-to-source hydration and JSON export checked independently. Counts are fixed; timestamp-dependent index sizes and filesystem page occupancy can vary between runs.",
+  "temporaryDatabasesRemoved": true,
+  "results": [
+    {
+      "count": 1000,
+      "tasks": 1,
+      "agents": 1,
+      "fixtureAndValidationMs": 2435.459,
+      "current": {
+        "databaseBytes": 6881280,
+        "payloads": {
+          "events": {
+            "rows": 1000,
+            "jsonBytes": 1447820,
+            "rawBytes": 729410,
+            "escapedRawBytes": 803410
+          },
+          "cache_payments": {
+            "rows": 1000,
+            "jsonBytes": 1569820,
+            "rawBytes": 729410,
+            "escapedRawBytes": 803410
+          },
+          "outcomes": {
+            "rows": 2000,
+            "jsonBytes": 558000,
+            "rawBytes": 0,
+            "escapedRawBytes": 0
+          },
+          "cache_attempts": {
+            "rows": 1000,
+            "jsonBytes": 319000,
+            "rawBytes": 0,
+            "escapedRawBytes": 0
+          }
+        },
+        "tableSizes": [
+          {
+            "name": "events",
+            "pages": 501,
+            "allocatedBytes": 2052096,
+            "payloadBytes": 1639820,
+            "unusedBytes": 398462
+          },
+          {
+            "name": "cache_payments",
+            "pages": 501,
+            "allocatedBytes": 2052096,
+            "payloadBytes": 1700820,
+            "unusedBytes": 337462
+          },
+          {
+            "name": "outcomes",
+            "pages": 201,
+            "allocatedBytes": 823296,
+            "payloadBytes": 762000,
+            "unusedBytes": 46231
+          },
+          {
+            "name": "cache_attempts",
+            "pages": 144,
+            "allocatedBytes": 589824,
+            "payloadBytes": 530000,
+            "unusedBytes": 51677
+          },
+          {
+            "name": "cache_prefix",
+            "pages": 109,
+            "allocatedBytes": 446464,
+            "payloadBytes": 371337,
+            "unusedBytes": 63239
+          },
+          {
+            "name": "cache_attempt_selection",
+            "pages": 45,
+            "allocatedBytes": 184320,
+            "payloadBytes": 149872,
+            "unusedBytes": 29912
+          },
+          {
+            "name": "sqlite_autoindex_outcomes_1",
+            "pages": 25,
+            "allocatedBytes": 102400,
+            "payloadBytes": 81872,
+            "unusedBytes": 14232
+          },
+          {
+            "name": "outcomes_payment",
+            "pages": 25,
+            "allocatedBytes": 102400,
+            "payloadBytes": 81872,
+            "unusedBytes": 14232
+          },
+          {
+            "name": "sqlite_autoindex_cache_attempts_1",
+            "pages": 23,
+            "allocatedBytes": 94208,
+            "payloadBytes": 77872,
+            "unusedBytes": 13064
+          },
+          {
+            "name": "sqlite_autoindex_cache_payments_2",
+            "pages": 21,
+            "allocatedBytes": 86016,
+            "payloadBytes": 69872,
+            "unusedBytes": 12896
+          },
+          {
+            "name": "events_payment",
+            "pages": 21,
+            "allocatedBytes": 86016,
+            "payloadBytes": 69872,
+            "unusedBytes": 12896
+          },
+          {
+            "name": "sqlite_autoindex_events_1",
+            "pages": 13,
+            "allocatedBytes": 53248,
+            "payloadBytes": 40872,
+            "unusedBytes": 9224
+          },
+          {
+            "name": "sqlite_autoindex_cache_payments_1",
+            "pages": 13,
+            "allocatedBytes": 53248,
+            "payloadBytes": 40872,
+            "unusedBytes": 9224
+          },
+          {
+            "name": "events_ts",
+            "pages": 10,
+            "allocatedBytes": 40960,
+            "payloadBytes": 28872,
+            "unusedBytes": 8972
+          },
+          {
+            "name": "events_host",
+            "pages": 9,
+            "allocatedBytes": 36864,
+            "payloadBytes": 24872,
+            "unusedBytes": 8888
+          },
+          {
+            "name": "events_task",
+            "pages": 7,
+            "allocatedBytes": 28672,
+            "payloadBytes": 18872,
+            "unusedBytes": 6720
+          },
+          {
+            "name": "events_agent",
+            "pages": 7,
+            "allocatedBytes": 28672,
+            "payloadBytes": 19872,
+            "unusedBytes": 5720
+          },
+          {
+            "name": "sqlite_schema",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 3788,
+            "unusedBytes": 78
+          },
+          {
+            "name": "sqlite_autoindex_diagnostics_1",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 0,
+            "unusedBytes": 4088
+          },
+          {
+            "name": "schema_version",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 4,
+            "unusedBytes": 4076
+          },
+          {
+            "name": "diagnostics",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 0,
+            "unusedBytes": 4088
+          },
+          {
+            "name": "cache_cursors",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 8,
+            "unusedBytes": 4076
+          }
+        ]
+      },
+      "variants": [
+        {
+          "encoding": "1-1-identity",
+          "codecRoundTripMs": 0,
+          "databaseBytes": 6836224,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1447820,
+              "rawBytes": 729410,
+              "escapedRawBytes": 803410
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 1569820,
+              "rawBytes": 729410,
+              "escapedRawBytes": 803410
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1639820,
+              "unusedBytes": 398462
+            },
+            {
+              "name": "cache_payments",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1700820,
+              "unusedBytes": 337462
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 108,
+              "allocatedBytes": 442368,
+              "payloadBytes": 371337,
+              "unusedBytes": 59155
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 18872,
+              "unusedBytes": 6720
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        },
+        {
+          "encoding": "1-1-gzip",
+          "codecRoundTripMs": 86.212,
+          "databaseBytes": 6836224,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1317490,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 1439490,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1509490,
+              "unusedBytes": 528792
+            },
+            {
+              "name": "cache_payments",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1570490,
+              "unusedBytes": 467792
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 108,
+              "allocatedBytes": 442368,
+              "payloadBytes": 371337,
+              "unusedBytes": 59155
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 18872,
+              "unusedBytes": 6720
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        },
+        {
+          "encoding": "1-1-br",
+          "codecRoundTripMs": 110.273,
+          "databaseBytes": 6836224,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1304814,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 1426814,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1496814,
+              "unusedBytes": 541468
+            },
+            {
+              "name": "cache_payments",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1557814,
+              "unusedBytes": 480468
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 108,
+              "allocatedBytes": 442368,
+              "payloadBytes": 371337,
+              "unusedBytes": 59155
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 18872,
+              "unusedBytes": 6720
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        },
+        {
+          "encoding": "1-1-omit-cache",
+          "codecRoundTripMs": 0,
+          "databaseBytes": 5812224,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1447820,
+              "rawBytes": 729410,
+              "escapedRawBytes": 803410
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 757410,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1639820,
+              "unusedBytes": 398462
+            },
+            {
+              "name": "cache_payments",
+              "pages": 251,
+              "allocatedBytes": 1028096,
+              "payloadBytes": 888410,
+              "unusedBytes": 129840
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 108,
+              "allocatedBytes": 442368,
+              "payloadBytes": 371337,
+              "unusedBytes": 59155
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 18872,
+              "unusedBytes": 6720
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        },
+        {
+          "encoding": "1-1-br-omit-cache",
+          "codecRoundTripMs": 53.211,
+          "databaseBytes": 5812224,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1304814,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 757410,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1496814,
+              "unusedBytes": 541468
+            },
+            {
+              "name": "cache_payments",
+              "pages": 251,
+              "allocatedBytes": 1028096,
+              "payloadBytes": 888410,
+              "unusedBytes": 129840
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 108,
+              "allocatedBytes": 442368,
+              "payloadBytes": 371337,
+              "unusedBytes": 59155
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 18872,
+              "unusedBytes": 6720
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        }
+      ],
+      "hydration": {
+        "verified": 1000,
+        "identicalSourceAndCacheRaw": true,
+        "completeHydratedStateParity": true,
+        "exactJsonExportParity": true,
+        "oldSchemaRejectsOmittedRaw": true
+      }
+    },
+    {
+      "count": 1000,
+      "tasks": 100,
+      "agents": 10,
+      "fixtureAndValidationMs": 2635.306,
+      "current": {
+        "databaseBytes": 7405568,
+        "payloads": {
+          "events": {
+            "rows": 1000,
+            "jsonBytes": 1448720,
+            "rawBytes": 729410,
+            "escapedRawBytes": 803410
+          },
+          "cache_payments": {
+            "rows": 1000,
+            "jsonBytes": 1570720,
+            "rawBytes": 729410,
+            "escapedRawBytes": 803410
+          },
+          "outcomes": {
+            "rows": 2000,
+            "jsonBytes": 558000,
+            "rawBytes": 0,
+            "escapedRawBytes": 0
+          },
+          "cache_attempts": {
+            "rows": 1000,
+            "jsonBytes": 319000,
+            "rawBytes": 0,
+            "escapedRawBytes": 0
+          }
+        },
+        "tableSizes": [
+          {
+            "name": "events",
+            "pages": 501,
+            "allocatedBytes": 2052096,
+            "payloadBytes": 1641620,
+            "unusedBytes": 396662
+          },
+          {
+            "name": "cache_payments",
+            "pages": 501,
+            "allocatedBytes": 2052096,
+            "payloadBytes": 1701720,
+            "unusedBytes": 336562
+          },
+          {
+            "name": "cache_prefix",
+            "pages": 237,
+            "allocatedBytes": 970752,
+            "payloadBytes": 831077,
+            "unusedBytes": 113297
+          },
+          {
+            "name": "outcomes",
+            "pages": 201,
+            "allocatedBytes": 823296,
+            "payloadBytes": 762000,
+            "unusedBytes": 46231
+          },
+          {
+            "name": "cache_attempts",
+            "pages": 144,
+            "allocatedBytes": 589824,
+            "payloadBytes": 530000,
+            "unusedBytes": 51677
+          },
+          {
+            "name": "cache_attempt_selection",
+            "pages": 45,
+            "allocatedBytes": 184320,
+            "payloadBytes": 149872,
+            "unusedBytes": 29912
+          },
+          {
+            "name": "sqlite_autoindex_outcomes_1",
+            "pages": 25,
+            "allocatedBytes": 102400,
+            "payloadBytes": 81872,
+            "unusedBytes": 14232
+          },
+          {
+            "name": "outcomes_payment",
+            "pages": 25,
+            "allocatedBytes": 102400,
+            "payloadBytes": 81872,
+            "unusedBytes": 14232
+          },
+          {
+            "name": "sqlite_autoindex_cache_attempts_1",
+            "pages": 23,
+            "allocatedBytes": 94208,
+            "payloadBytes": 77872,
+            "unusedBytes": 13064
+          },
+          {
+            "name": "sqlite_autoindex_cache_payments_2",
+            "pages": 21,
+            "allocatedBytes": 86016,
+            "payloadBytes": 69872,
+            "unusedBytes": 12896
+          },
+          {
+            "name": "events_payment",
+            "pages": 21,
+            "allocatedBytes": 86016,
+            "payloadBytes": 69872,
+            "unusedBytes": 12896
+          },
+          {
+            "name": "sqlite_autoindex_events_1",
+            "pages": 13,
+            "allocatedBytes": 53248,
+            "payloadBytes": 40872,
+            "unusedBytes": 9224
+          },
+          {
+            "name": "sqlite_autoindex_cache_payments_1",
+            "pages": 13,
+            "allocatedBytes": 53248,
+            "payloadBytes": 40872,
+            "unusedBytes": 9224
+          },
+          {
+            "name": "events_ts",
+            "pages": 10,
+            "allocatedBytes": 40960,
+            "payloadBytes": 28872,
+            "unusedBytes": 8972
+          },
+          {
+            "name": "events_host",
+            "pages": 9,
+            "allocatedBytes": 36864,
+            "payloadBytes": 24872,
+            "unusedBytes": 8888
+          },
+          {
+            "name": "events_task",
+            "pages": 7,
+            "allocatedBytes": 28672,
+            "payloadBytes": 19772,
+            "unusedBytes": 5820
+          },
+          {
+            "name": "events_agent",
+            "pages": 7,
+            "allocatedBytes": 28672,
+            "payloadBytes": 19872,
+            "unusedBytes": 5720
+          },
+          {
+            "name": "sqlite_schema",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 3788,
+            "unusedBytes": 78
+          },
+          {
+            "name": "sqlite_autoindex_diagnostics_1",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 0,
+            "unusedBytes": 4088
+          },
+          {
+            "name": "schema_version",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 4,
+            "unusedBytes": 4076
+          },
+          {
+            "name": "diagnostics",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 0,
+            "unusedBytes": 4088
+          },
+          {
+            "name": "cache_cursors",
+            "pages": 1,
+            "allocatedBytes": 4096,
+            "payloadBytes": 8,
+            "unusedBytes": 4076
+          }
+        ]
+      },
+      "variants": [
+        {
+          "encoding": "100-10-identity",
+          "codecRoundTripMs": 0,
+          "databaseBytes": 7364608,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1448720,
+              "rawBytes": 729410,
+              "escapedRawBytes": 803410
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 1570720,
+              "rawBytes": 729410,
+              "escapedRawBytes": 803410
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1641620,
+              "unusedBytes": 396662
+            },
+            {
+              "name": "cache_payments",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1701720,
+              "unusedBytes": 336562
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 237,
+              "allocatedBytes": 970752,
+              "payloadBytes": 831077,
+              "unusedBytes": 113297
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19772,
+              "unusedBytes": 5820
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        },
+        {
+          "encoding": "100-10-gzip",
+          "codecRoundTripMs": 66.132,
+          "databaseBytes": 7364608,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1318390,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 1440390,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1511290,
+              "unusedBytes": 526992
+            },
+            {
+              "name": "cache_payments",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1571390,
+              "unusedBytes": 466892
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 237,
+              "allocatedBytes": 970752,
+              "payloadBytes": 831077,
+              "unusedBytes": 113297
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19772,
+              "unusedBytes": 5820
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        },
+        {
+          "encoding": "100-10-br",
+          "codecRoundTripMs": 112.374,
+          "databaseBytes": 7364608,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1305714,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 1427714,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1498614,
+              "unusedBytes": 539668
+            },
+            {
+              "name": "cache_payments",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1558714,
+              "unusedBytes": 479568
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 237,
+              "allocatedBytes": 970752,
+              "payloadBytes": 831077,
+              "unusedBytes": 113297
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19772,
+              "unusedBytes": 5820
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        },
+        {
+          "encoding": "100-10-omit-cache",
+          "codecRoundTripMs": 0,
+          "databaseBytes": 6340608,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1448720,
+              "rawBytes": 729410,
+              "escapedRawBytes": 803410
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 758310,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1641620,
+              "unusedBytes": 396662
+            },
+            {
+              "name": "cache_payments",
+              "pages": 251,
+              "allocatedBytes": 1028096,
+              "payloadBytes": 889310,
+              "unusedBytes": 128940
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 237,
+              "allocatedBytes": 970752,
+              "payloadBytes": 831077,
+              "unusedBytes": 113297
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19772,
+              "unusedBytes": 5820
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        },
+        {
+          "encoding": "100-10-br-omit-cache",
+          "codecRoundTripMs": 45.393,
+          "databaseBytes": 6340608,
+          "payloads": {
+            "events": {
+              "rows": 1000,
+              "jsonBytes": 1305714,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_payments": {
+              "rows": 1000,
+              "jsonBytes": 758310,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "outcomes": {
+              "rows": 2000,
+              "jsonBytes": 558000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            },
+            "cache_attempts": {
+              "rows": 1000,
+              "jsonBytes": 319000,
+              "rawBytes": 0,
+              "escapedRawBytes": 0
+            }
+          },
+          "tableSizes": [
+            {
+              "name": "events",
+              "pages": 501,
+              "allocatedBytes": 2052096,
+              "payloadBytes": 1498614,
+              "unusedBytes": 539668
+            },
+            {
+              "name": "cache_payments",
+              "pages": 251,
+              "allocatedBytes": 1028096,
+              "payloadBytes": 889310,
+              "unusedBytes": 128940
+            },
+            {
+              "name": "cache_prefix",
+              "pages": 237,
+              "allocatedBytes": 970752,
+              "payloadBytes": 831077,
+              "unusedBytes": 113297
+            },
+            {
+              "name": "outcomes",
+              "pages": 201,
+              "allocatedBytes": 823296,
+              "payloadBytes": 762000,
+              "unusedBytes": 46231
+            },
+            {
+              "name": "cache_attempts",
+              "pages": 144,
+              "allocatedBytes": 589824,
+              "payloadBytes": 530000,
+              "unusedBytes": 51677
+            },
+            {
+              "name": "cache_attempt_selection",
+              "pages": 41,
+              "allocatedBytes": 167936,
+              "payloadBytes": 149872,
+              "unusedBytes": 13576
+            },
+            {
+              "name": "sqlite_autoindex_outcomes_1",
+              "pages": 25,
+              "allocatedBytes": 102400,
+              "payloadBytes": 81872,
+              "unusedBytes": 14232
+            },
+            {
+              "name": "sqlite_autoindex_cache_attempts_1",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 77872,
+              "unusedBytes": 13064
+            },
+            {
+              "name": "outcomes_payment",
+              "pages": 23,
+              "allocatedBytes": 94208,
+              "payloadBytes": 81872,
+              "unusedBytes": 6064
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_2",
+              "pages": 21,
+              "allocatedBytes": 86016,
+              "payloadBytes": 69872,
+              "unusedBytes": 12896
+            },
+            {
+              "name": "events_payment",
+              "pages": 19,
+              "allocatedBytes": 77824,
+              "payloadBytes": 69872,
+              "unusedBytes": 4728
+            },
+            {
+              "name": "sqlite_autoindex_events_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "sqlite_autoindex_cache_payments_1",
+              "pages": 13,
+              "allocatedBytes": 53248,
+              "payloadBytes": 40872,
+              "unusedBytes": 9224
+            },
+            {
+              "name": "events_ts",
+              "pages": 9,
+              "allocatedBytes": 36864,
+              "payloadBytes": 28872,
+              "unusedBytes": 4888
+            },
+            {
+              "name": "events_host",
+              "pages": 8,
+              "allocatedBytes": 32768,
+              "payloadBytes": 24872,
+              "unusedBytes": 4804
+            },
+            {
+              "name": "events_task",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19772,
+              "unusedBytes": 5820
+            },
+            {
+              "name": "events_agent",
+              "pages": 7,
+              "allocatedBytes": 28672,
+              "payloadBytes": 19872,
+              "unusedBytes": 5720
+            },
+            {
+              "name": "sqlite_schema",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 3806,
+              "unusedBytes": 60
+            },
+            {
+              "name": "sqlite_autoindex_diagnostics_1",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "schema_version",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 4,
+              "unusedBytes": 4076
+            },
+            {
+              "name": "diagnostics",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 0,
+              "unusedBytes": 4088
+            },
+            {
+              "name": "cache_cursors",
+              "pages": 1,
+              "allocatedBytes": 4096,
+              "payloadBytes": 8,
+              "unusedBytes": 4076
+            }
+          ]
+        }
+      ],
+      "hydration": {
+        "verified": 1000,
+        "identicalSourceAndCacheRaw": true,
+        "completeHydratedStateParity": true,
+        "exactJsonExportParity": true,
+        "oldSchemaRejectsOmittedRaw": true
+      }
+    }
+  ]
+}

@@ -13,7 +13,7 @@ unless a row names one intake specifically.
 
 | Area in the brief | Implemented behavior and reason |
 | --- | --- |
-| Demo placeholder (§6) | The original placeholder is replaced by a 20-second Windows ConPTY recording rendered by agg. The simulation runs locally; no payment is signed or settled. Only the GIF ships in the package; capture tools and intermediate files are local development artifacts. |
+| Demo placeholder (§6) | The GIF records a real Base Sepolia x402 payment through the CLI on Windows ConPTY, rendered by agg. A separate development client signs and the public facilitator settles test tokens. Only the GIF ships in the package; the reproducible development example is excluded. The original offline simulation remains available. |
 | Broad x402 support (§2, §4) | Support HTTP v1/v2 `exact` EVM **EIP-3009** authorizations. v1 maps only `base` and `base-sepolia`; v2 accepts positive `eip155:<chain-id>` identifiers. Permit2, ERC-7710, other transfer methods, schemes, and networks are diagnosed and passed through. Their different authorization semantics cannot safely share this parser. |
 | Generic 402 JSON and complete replay context (§0, §2) | v1 reads the challenge body and `X-PAYMENT`; v2 reads `PAYMENT-REQUIRED` and `PAYMENT-SIGNATURE`. v1 replays omit asset context and need a previously observed, unambiguous challenge. v2 replays carry `accepted`. A status of 402 alone does not establish x402. |
 | Unbounded challenge observation (§4) | v1 correlation is local to each intake instance, with a five-minute TTL and at most 1,000 cached contexts. The key binds actual URL, method, task, agent, Authorization, and Cookie. Bodies are limited to 64 KiB; payment header text is limited to 65,536 characters. The proxy taps the streaming response without delaying delivery; the SDK additionally limits its cloned body observation to 100 ms. Missing, expired, oversized, slow, compressed proxy bodies, and ambiguous challenges cannot be metered reliably and pass through with a diagnostic. |
@@ -35,7 +35,7 @@ unless a row names one intake specifically.
 | Thirty visible rows and Google Fonts (§5) | The event stream keeps 30 recent rows, with scrolling where screen height or width requires it. System grotesque and monospace stacks replace runtime Google Fonts requests to honor the network invariant. Complete light/dark tokens and exact BigInt-derived chart geometry are retained. |
 | Export and invoice format (§2, §5) | CSV includes all derived payment rows: `amount` is the counted contribution, while `authorizedAmount` preserves the original proposal. Blocked and wholly failed payments contribute zero. Sum each network/asset separately to reproduce the dashboard ledger totals. The invoice is standalone printable HTML, with no PDF renderer, exchange-rate conversion, tax calculation, or settlement attestation. |
 | Module and dependency choices (§7) | Ship ESM only, with no optional CommonJS build. Pin `better-sqlite3` 12.8.0 to preserve Node 20 support; version 13 requires Node 22. Exact pins and the audited esbuild override are recorded in `package.json` and the lockfile. |
-| Fixture realism and financial claims (§7) | Fixture envelopes follow primary protocol examples but all authorizations, signatures, and settlement responses are synthetic. Tests exercise parsing, transport, budget races, failures, and exact accounting; no real transfers, wallet signing, facilitator call, or independent chain verification is performed. |
+| Fixture realism and financial claims (§7) | The default test suite uses synthetic authorizations and settlement responses. A separate manually executed Base Sepolia example proves an actual v2 exact EIP-3009 transfer through the CLI explicit upstream proxy, plus budget blocking and independent RPC checks. This establishes one testnet flow, not mainnet, SDK wallet compatibility, or universal protocol support. |
 | Public installation and repository tagline (§1, §6) | The initial registry check returned `E404`; npm ownership was subsequently established with `0.1.0`. The release package uses `0.1.1`, and the README provides both `npx taximeter start` and source-build instructions. Fresh-directory startup from the local tarball is documented in `VERIFICATION.md`. Repository visibility is a maintainer-managed setting. The intended repository description is **A taximeter for your AI agents.** |
 
 These limitations make Taximeter a cooperative local meter. An agent that
@@ -367,3 +367,13 @@ integration tests establish forwarding, blocking, idempotency, and failure
 handling. Neither test category establishes on-chain settlement, facilitator
 availability, wallet compatibility, or universal x402 support. Those claims are
 outside the initial implementation and its non-custodial scope.
+
+The subsequent 0.2.2 live testnet run is separate from those fixtures. Its pinned
+official client signs outside Taximeter; the official Express middleware calls
+the public facilitator. The development harness checks the canonical receipt,
+USDC Transfer log, balances, budget rejection, and exact local totals. See
+[the reproducible example](examples/live-testnet/README.md) and
+[recorded evidence](VERIFICATION.md#022-live-testnet-payment-and-first-connect-notice).
+Taximeter's runtime still observes upstream settlement headers without issuing
+RPC calls or performing settlement itself. The local seller uses HTTP; this run
+does not establish real-payment coverage for an HTTPS upstream or the SDK mode.

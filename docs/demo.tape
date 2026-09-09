@@ -1,4 +1,4 @@
-Output docs/demo.gif
+Output tmp/offline-demo.gif
 Set Shell "bash"
 Set FontSize 18
 Set Width 960
