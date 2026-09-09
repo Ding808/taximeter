@@ -1274,7 +1274,7 @@ $ npm run typecheck
 
 $ npm run lint
 > biome check --error-on-warnings .
-Checked 74 files in 48ms. No fixes applied.
+Checked 76 files in 43ms. No fixes applied.
 
 $ npm test
 Test Files  22 passed (22)
@@ -1338,3 +1338,7 @@ per 1,000-payment dataset relative to its repacked control. Tagged per-row
 gzip/Brotli did not save database bytes in these samples. The
 [storage note](docs/STORAGE.md) records scope, reproduction commands, and why an
 incompatible format migration and accounting-preserving archive design are needed.
+
+After committing the verified candidate, `git status --porcelain` printed nothing.
+Dependencies, builds, coverage, packed archives, and local example state stayed
+ignored. The evidence and reproduction sources were the intentional additions.
