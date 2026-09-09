@@ -1,8 +1,7 @@
 # Contributing to Taximeter
 
 Taximeter observes agent payments, records them locally, and gates supported
-authorizations against budgets. Start with [SPEC.md](SPEC.md), then read
-[SPEC-NOTES.md](SPEC-NOTES.md) for the supported protocol and
+authorizations against budgets. Start with [SPEC-NOTES.md](SPEC-NOTES.md) for the supported protocol and
 [DECISIONS.md](DECISIONS.md) for implementation choices.
 
 ## Development

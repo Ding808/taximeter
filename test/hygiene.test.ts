@@ -7,6 +7,7 @@ import { z } from "zod";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const generated = [
+  "SPEC.md",
   "node_modules/example/index.js",
   "dist/index.js",
   "dist/ui/index.html",
@@ -40,7 +41,6 @@ const generated = [
   ".vscode/local.private.json",
 ];
 const required = [
-  "SPEC.md",
   "SPEC-NOTES.md",
   "DECISIONS.md",
   "VERIFICATION.md",
@@ -108,7 +108,7 @@ describe("repository hygiene contract", () => {
     ).toEqual([]);
   });
 
-  test("specification, verification evidence, migrations, snapshots, and release configuration are tracked", () => {
+  test("protocol notes, verification evidence, migrations, snapshots, and release configuration are tracked", () => {
     const paths = tracked();
     for (const path of required) {
       expect(paths, `${path} must remain tracked`).toContain(path);

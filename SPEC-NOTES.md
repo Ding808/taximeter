@@ -1,7 +1,7 @@
 # Protocol verification notes
 
 Research date: **2026-09-08**. These notes record the protocol baseline read before
-implementation, the supported subset, and corrections to [SPEC.md](SPEC.md).
+implementation, the supported subset, and corrections to the initial design.
 Amounts below are atomic integer strings. Taximeter does not sign, verify, or
 settle a payment.
 
