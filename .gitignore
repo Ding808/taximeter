@@ -1,5 +1,8 @@
 # deps & build
 node_modules/
+
+# Local build brief
+/SPEC.md
 dist/
 *.tsbuildinfo
 .vite/
