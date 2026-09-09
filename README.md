@@ -6,6 +6,8 @@ Taximeter records supported agent payments, checks budgets before forwarding the
 and keeps an exact local ledger. Follow the [quickstart](#quickstart) to install
 the package or run a source checkout. Requires Node 20 or newer and npm.
 
+![Taximeter dashboard showing an empty local ledger and a 100 USDC budget](https://raw.githubusercontent.com/Ding808/taximeter/main/docs/dashboard.png)
+
 ## A 20-second demo
 
 ![Taximeter meters a real testnet payment and blocks the next payment](docs/demo.gif)
@@ -69,7 +71,7 @@ installed copy.
 You should now see:
 
 ```text
-Taximeter 0.3.0
+Taximeter 0.3.1
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
