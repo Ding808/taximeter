@@ -35,6 +35,13 @@ Use `npm run format` to apply Biome formatting. Keep LF line endings as specifie
 in `.gitattributes`. Check the package contents and compressed size with
 `npm pack --dry-run`; the release tarball must stay below 2 MB.
 
+The [live testnet example](examples/live-testnet/README.md) is a separate private
+development package with pinned payment-client dependencies. Run it manually
+with disposable Base Sepolia test tokens; it is excluded from the published
+package and default test suite. Its client handles signing outside Taximeter.
+The [storage probe](docs/STORAGE.md) runs offline and records the cost of complete
+payment lifecycles without changing the product's storage format.
+
 ## Changes that preserve trust
 
 - Preserve unknown HTTP traffic byte for byte. Record a diagnostic when a format

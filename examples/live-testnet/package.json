@@ -1,0 +1,23 @@
+{
+  "name": "taximeter-live-testnet-example",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "prepare-wallet": "node prepare-wallet.mjs",
+    "check": "node run-live.mjs --check-only",
+    "start": "node run-live.mjs",
+    "test": "node --test proof.test.mjs"
+  },
+  "dependencies": {
+    "@x402/core": "2.25.0",
+    "@x402/evm": "2.25.0",
+    "@x402/express": "2.25.0",
+    "@x402/fetch": "2.25.0",
+    "express": "5.2.1",
+    "viem": "2.56.3",
+    "zod": "4.5.4"
+  }
+}

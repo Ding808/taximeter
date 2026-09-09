@@ -12,12 +12,16 @@ from source with the quickstart below. Requires Node 20 or newer.
 
 ## A 20-second demo
 
-![Taximeter allows 20 payments and blocks payment 21](docs/demo.gif)
+![Taximeter meters a real testnet payment and blocks the next payment](docs/demo.gif)
 
-This local recording shows 20 payments passing and payment 21 being blocked at
-an exact total of 140 atomic units. It uses synthetic x402 envelopes and never
-moves money. [Record the demo](https://github.com/Ding808/taximeter/blob/main/docs/RECORDING.md)
-with the simulation in the source checkout.
+This recording sends **0.001 test USDC on Base Sepolia** through the actual CLI
+proxy, verifies its canonical receipt and balance changes, then blocks the next
+signed request at an exact budget of 1000 atomic units.
+[View the transaction](https://sepolia.basescan.org/tx/0x10dc76728133356363ad1dd8d694a5e1eee2086fc3325ca572d3d035e7062c58)
+or [reproduce the recording](https://github.com/Ding808/taximeter/blob/main/docs/RECORDING.md).
+The official client signs and the facilitator settles; Taximeter observes and
+gates. This proves one testnet flow with a local HTTP seller, not mainnet or
+payment visibility inside HTTPS CONNECT.
 
 ## Why
 
@@ -51,7 +55,7 @@ Open a terminal in this source checkout, with Node 20+ and npm installed.
 You should now see:
 
 ```text
-Taximeter 0.2.1
+Taximeter 0.2.2
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
@@ -70,7 +74,7 @@ Choose the connection mode your agent supports:
 | HTTP forward proxy | Configure the client's HTTP proxy as `http://127.0.0.1:8402`. `HTTP_PROXY` works only in clients that honor it. | Plain HTTP payment requests and replies. |
 | Explicit upstream | Start with `--upstream` set to the real HTTP(S) API origin, then use the local proxy URL as the agent's API base URL. | HTTP or HTTPS upstream payments, without intercepting TLS. |
 | SDK | Put `withMeter(fetch, options)` **inside** the payment wrapper. See [SDK examples](docs/SDK.md). | Requests made through the supplied transport. |
-| HTTPS CONNECT | A proxy-aware HTTPS client may open a tunnel. | Encrypted bytes pass through, with an unmetered diagnostic. Payment headers are invisible. |
+| HTTPS CONNECT | A proxy-aware HTTPS client may open a tunnel. | Encrypted bytes pass through. The first tunnel prints a stderr notice; every tunnel records an unmetered diagnostic. Payment headers are invisible. |
 
 In upstream mode, `/data` replaces any path prefix in the configured upstream URL.
 Use the API origin as the upstream and keep its path in the request. Native fetch
@@ -227,6 +231,12 @@ Host, recipient, and unknown-asset denials have `budget: null`, `spent: "0"`, an
 Raw payment authorizations stay in the local audit ledger and JSON export. Treat
 them as sensitive. [Security guidance](SECURITY.md) describes the boundary and how
 to report a problem.
+
+Storage grows with payment, retry, and diagnostic history. There is currently no
+retention, prune, or compact command; `reset` archives the old database and does
+not reclaim its disk space. Large-ledger users should monitor available space.
+The [storage measurements and follow-up plan](https://github.com/Ding808/taximeter/blob/main/docs/STORAGE.md)
+describe the measured costs and migration constraints.
 
 ## Contributing / license
 
