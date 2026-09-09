@@ -246,6 +246,7 @@ export function editConfig(input: {
       before: before.config,
       after: after.config,
       writtenValue: configValue(candidate, input.key),
+      writtenAmountContext: amountContext(amountConfig, input.key),
       participates,
       changed: !unchanged,
     };

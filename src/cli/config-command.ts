@@ -77,9 +77,14 @@ export function addConfigCommands(
     const after = configValue(result.after, key);
     const next = unset ? after : result.writtenValue;
     const beforeContext = amountContext(result.before, key);
-    const afterContext = amountContext(result.after, key);
+    const afterContext = unset ? amountContext(result.after, key) : result.writtenAmountContext;
     const human =
-      typeof before === "string" && typeof next === "string" && beforeContext && afterContext
+      typeof before === "string" &&
+      typeof next === "string" &&
+      beforeContext &&
+      afterContext &&
+      beforeContext.asset === afterContext.asset &&
+      beforeContext.network === afterContext.network
         ? `  (${formatAmount(before, beforeContext.asset, beforeContext.network)} → ${formatAmount(next, afterContext.asset, afterContext.network)})`
         : "";
     output(

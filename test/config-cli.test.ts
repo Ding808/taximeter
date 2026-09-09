@@ -129,6 +129,39 @@ describe("visible CLI configuration", () => {
     expect(await cli(["config", "show"], sources)).toContain("Effective budgets:");
   });
 
+  test("success output never applies effective USDC units to an unrelated target asset", async () => {
+    const sources = workspace();
+    const standalone = join(sources.root, "standalone.json");
+    json(standalone, { budgets: { global: { asset: "DAI", amount: "100" } } });
+    const output = await cli(
+      ["config", "set", "budgets.global.amount", "500", "--file", standalone],
+      sources,
+    );
+    expect(output).toContain("budgets.global.amount: 100000000 → 500");
+    expect(output).toContain("not an active layer");
+    expect(output).not.toContain("USDC");
+    expect(JSON.parse(readFileSync(standalone, "utf8"))).toEqual({
+      budgets: { global: { asset: "DAI", amount: "500" } },
+    });
+  });
+
+  test("an overridden lower file's amount is displayed without the higher file's asset units", async () => {
+    const sources = workspace();
+    json(sources.homeFile, { budgets: { global: { asset: "DAI", amount: "100" } } });
+    json(sources.cwdFile, { budgets: { global: { asset: "USDC", amount: "200" } } });
+    const output = await cli(
+      ["config", "set", "budgets.global.amount", "500", "--file", sources.homeFile],
+      sources,
+    );
+    expect(output).toContain("budgets.global.amount: 200 → 500");
+    expect(output).toContain("written value is overridden");
+    expect(output).not.toContain("USDC");
+    expect(loadConfig({}, sources).budgets.global).toMatchObject({ asset: "USDC", amount: "200" });
+    expect(JSON.parse(readFileSync(sources.homeFile, "utf8"))).toEqual({
+      budgets: { global: { asset: "DAI", amount: "500" } },
+    });
+  });
+
   test("all subcommands accept common options on the group or on the subcommand", async () => {
     const sources = workspace();
     const path = join(sources.root, "chosen.json");
