@@ -8,7 +8,7 @@ Install the registry release with `npm install taximeter`. From a source checkou
 run `npm ci` and `npm run build`, then save the examples at the repository root.
 Their `import "taximeter"` statements resolve the package's own built exports.
 To try a local build in another project, run `npm pack`, copy the resulting
-tarball there, and use `npm install ./taximeter-0.2.1.tgz`.
+tarball there, and use `npm install ./taximeter-0.2.2.tgz`.
 
 ## Try it locally
 
@@ -111,6 +111,11 @@ and [transport implementation](https://unpkg.com/@x402/fetch@2.25.0/dist/esm/ind
 The local example and factory were exercised with ordinary loopback traffic;
 the integration tests use synthetic x402 authorizations. No wallet or genuine
 payment was used to validate these examples.
+
+A separate [live testnet example](https://github.com/Ding808/taximeter/tree/main/examples/live-testnet)
+validates the actual CLI proxy with the official client, Express server, and a
+Base Sepolia transfer. That evidence covers explicit upstream mode; it does not
+turn the SDK factory above into a tested live-wallet integration.
 
 ## Options and lifecycle
 

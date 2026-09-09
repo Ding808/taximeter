@@ -1201,3 +1201,140 @@ node scripts/benchmark-ledger.mjs --counts 50000,500000 --payments 100 --batches
 No new full-scale 0.1.2 measurements were run for this patch; its compatibility
 with the extended harness was checked on a small fixture. The 0.1.2 comparison
 in the preceding release section remains the earlier measured baseline.
+
+## 0.2.2: live testnet payment and first CONNECT notice
+
+Verified on Windows x64 / Node 24.13.0, 2026-09-09 UTC (2026-09-08 local time).
+The runtime change emits the existing encrypted CONNECT diagnostic sentence to
+stderr once across proxy instances. Every valid tunnel still records its own
+diagnostic. Four regressions cover concurrent instances, invalid CONNECT, binary
+payload transparency, synchronous and asynchronous stderr failures, and an
+unavailable upstream. The asynchronous EPIPE regression reproduced the unhandled
+stream error before switching the notice to Node Console's error-tolerant writer.
+
+### Real payment and recorded demo
+
+The [private development example](examples/live-testnet/README.md) pins
+`@x402/core`, `@x402/evm`, `@x402/express`, and `@x402/fetch` to 2.25.0, viem to
+2.56.3, and Express to 5.2.1. It starts the actual built CLI with an explicit
+local HTTP upstream and a fresh disk ledger. The official Express server calls
+`https://x402.org/facilitator`; the client signs outside Taximeter. The independent
+receipt checks use `https://sepolia.base.org` and enforce chain ID 84532.
+
+The final recorded run transferred exactly `"1000"` atomic test USDC units:
+
+- [Transaction](https://sepolia.basescan.org/tx/0x10dc76728133356363ad1dd8d694a5e1eee2086fc3325ca572d3d035e7062c58): `0x10dc76728133356363ad1dd8d694a5e1eee2086fc3325ca572d3d035e7062c58`.
+- Canonical block `46574350`, hash `0x5fc419afd6dc2b27ceab4d51c6f17d5862f46ba6e0da1cb04f5d7c77ae90b700`; observed chain height `46574351`.
+- The block contains the transaction. One matching canonical USDC Transfer log has the same block/transaction identity and is not removed.
+- Payer balance changed from `"19999000"` to `"19998000"`; recipient from `"1000"` to `"2000"`.
+- Two initial 402 challenges and two signed replays reached the proxy. Only one signed request reached Express, and verify/settle/handler counts each remained one after blocking the second replay.
+- The block response was exactly `{"error":"blocked_by_taximeter","reason":"global_budget","budget":"1000","spent":"1000","remaining":"0"}`. No second balance change or settlement header occurred.
+- Ledger and dashboard agreed on `"1000"` confirmed units, zero unknown units, one observed payment, one blocked event, and zero diagnostics. CLI and SDK error counts were zero; both local servers closed successfully.
+
+The [redacted evidence](docs/evidence/base-sepolia-0.2.2.json) and
+[unaltered terminal capture](docs/evidence/live-0.2.2.cast) are committed.
+The run took 7,757 ms through verification, excluding final cleanup and recording
+holds. The 20-second GIF is 1168×693, 27 frames, and 76,492 bytes; its final frame
+was visually inspected. The recording retains actual output and original pauses,
+then extends the final hold. H.264 MP4 output is also retained locally.
+
+The first live run found a case synthetic fixtures had missed: the receipt wait
+resolved with an all-zero block hash. Its real transfer was subsequently proven
+by a separate [read-only canonical lookup](docs/evidence/base-sepolia-0.2.2-initial-proof.json).
+The harness now polls reads until it can check nonzero canonical block identity,
+transaction membership, log metadata, and independently observed confirmation
+depth. The final recording also encountered the initial zero hash and required
+two receipt observations before accepting proof. Eight offline proof tests cover
+that path, inconsistent block hashes/numbers, insufficient height, reverts,
+timeouts, wrong transactions, and removed or mismatched logs.
+
+These runs establish one real Base Sepolia v2 exact EIP-3009 flow and its budget
+block. They do not establish Ethereum finality, mainnet behavior, live SDK mode,
+HTTPS-upstream payment coverage, or an independent human cold-start study.
+Taximeter still trusts matching upstream settlement headers; only the separate
+development harness queries the chain. Keys and raw authorization ledgers remain
+local and are excluded from both Git and the published package.
+
+### Package and test checks
+
+The full suite passed with 355 tests in 22 files. Ledger coverage is 100%
+statements/functions/lines and 95.87% branches; policy coverage is 100% throughout.
+The independent example's eight proof tests also pass. Selected real command
+output follows; the dependency warnings remain visible rather than being counted
+as a clean audit:
+
+```text
+$ npm ci
+added 295 packages, and audited 296 packages in 4s
+3 moderate severity vulnerabilities
+
+$ npm run typecheck
+> taximeter@0.2.2 typecheck
+> tsc --noEmit
+
+$ npm run lint
+> biome check --error-on-warnings .
+Checked 74 files in 48ms. No fixes applied.
+
+$ npm test
+Test Files  22 passed (22)
+     Tests  355 passed (355)
+
+$ npm --prefix examples/live-testnet test
+tests 8
+pass 8
+fail 0
+
+$ npm run build
+ESM dist\index.js          5.32 KB
+ESM dist\cli\index.js      17.92 KB
+ESM dist\chunk-DJPLFDD7.js 61.19 KB
+DTS dist\cli\index.d.ts 20.00 B
+DTS dist\index.d.ts     14.76 KB
+✓ 130 modules transformed.
+✓ built in 728ms
+
+$ npm pack
+taximeter-0.2.2.tgz
+
+$ npm run check:package
+Package verified: taximeter-0.2.2.tgz
+205672 bytes compressed; 536122 bytes unpacked; 16 files.
+Both CLI aliases, ESM entry point, declarations, and prebuilt UI are present.
+7 relative Markdown file links resolve inside the package.
+Files whitelist honored; no UI source maps, source tree, tests, dependencies, or local state.
+
+$ npm run smoke:package
+$ npx ./taximeter-0.2.2.tgz start
+Taximeter 0.2.2
+Proxy: http://127.0.0.1:8402
+Dashboard: http://127.0.0.1:8403
+PASS: default proxy 8402 and dashboard 8403; default ledger created in the fresh home.
+PASS: validated empty dashboard summary and default budget without configuration.
+PASS: prebuilt dashboard HTML and 2 local JS/CSS assets served with correct MIME types.
+PASS: owned CLI and launcher processes stopped.
+PASS: verified temporary workspace removed.
+
+$ npm audit --omit=dev
+found 0 vulnerabilities
+```
+
+Installation also reports the existing `prebuild-install` and development `glob`
+deprecations. The build succeeds with the existing two Zod PURE-comment warnings.
+The three moderate audit entries represent one development-only Vitest advisory,
+[GHSA-82fw-gwwq-j7x9](https://github.com/vitest-dev/vitest/security/advisories/GHSA-82fw-gwwq-j7x9),
+propagated through Vitest, its mocker, and coverage package. This repository runs
+Node tests without exposing the affected mocker plugins or a browser-mode server.
+A coordinated Vitest/coverage major upgrade is a follow-up; production audit is
+separately clean as shown above.
+
+### Storage remains a known limit
+
+There is still no retention, pruning, or compact command. The committed
+[storage probe](scripts/storage-probe.mjs) and [results](benchmarks/storage-0.2.2.json)
+measure 2,000 synthetic payments with 4,000 outcome rows and verify exact hydration
+and export parity. Removing only duplicate cache raw data saved 1,024,000 bytes
+per 1,000-payment dataset relative to its repacked control. Tagged per-row
+gzip/Brotli did not save database bytes in these samples. The
+[storage note](docs/STORAGE.md) records scope, reproduction commands, and why an
+incompatible format migration and accounting-preserving archive design are needed.

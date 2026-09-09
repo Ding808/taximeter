@@ -1,0 +1,7 @@
+node_modules/
+secrets/
+wallet-addresses.json
+live-run-*/
+*.log
+*.cast
+*.gif
