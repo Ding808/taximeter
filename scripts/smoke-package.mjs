@@ -1,9 +1,10 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import {
   copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -42,6 +43,15 @@ const freshSummarySchema = z.strictObject({
 const lockSchema = z.strictObject({ pid: z.number().int().positive() });
 const assetPathSchema = z.string().regex(/^\/assets\/[A-Za-z0-9._-]+\.(js|css)$/);
 const environmentSchema = z.record(z.string(), z.string().optional());
+const doctorSchema = z.object({
+  configuration: z.literal("valid"),
+  config: z.object({
+    db: z.string(),
+    budgets: z.object({ global: z.object({ amount: z.string() }) }),
+  }),
+  sqlite: z.object({ status: z.literal("ready"), events: z.literal(0) }),
+  networkChecks: z.literal("none"),
+});
 
 function requireCondition(condition, message) {
   if (!condition) throw new Error(message);
@@ -94,6 +104,31 @@ async function fetchLocal(path, mime) {
   const type = z.string().parse(response.headers.get("content-type"));
   requireCondition(type.split(";")[0] === mime, `${path} returned an incorrect MIME type: ${type}`);
   return response;
+}
+
+function installedCli(cache, version) {
+  const installRoot = realpathSync(join(cache, "_npx"));
+  const candidates = readdirSync(installRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(installRoot, entry.name, "node_modules", "taximeter"))
+    .filter((directory) => existsSync(join(directory, "package.json")))
+    .filter(
+      (directory) =>
+        z
+          .object({ name: z.literal("taximeter"), version: z.literal(version) })
+          .safeParse(JSON.parse(readFileSync(join(directory, "package.json"), "utf8"))).success,
+    )
+    .map((directory) => realpathSync(join(directory, "dist", "cli", "index.js")));
+  requireCondition(
+    candidates.length === 1,
+    "Expected exactly one installed package in the fresh npx cache.",
+  );
+  const executable = z.string().parse(candidates[0]);
+  requireCondition(
+    executable.startsWith(`${installRoot}${sep}`) && statSync(executable).isFile(),
+    "The installed CLI must stay within the isolated npx cache.",
+  );
+  return executable;
 }
 
 async function smokePackage() {
@@ -270,6 +305,62 @@ async function smokePackage() {
     console.log(
       `PASS: prebuilt dashboard HTML and ${assets.length} local JS/CSS assets served with correct MIME types.`,
     );
+
+    // Reuse the exact installed executable. These commands never invoke npm or the registry.
+    const executable = source
+      ? resolve(root, "dist/cli/index.js")
+      : installedCli(cache, manifest.version);
+    const runInstalled = (args) =>
+      execFileSync(process.execPath, [executable, ...args], {
+        cwd,
+        env: environment,
+        encoding: "utf8",
+        timeout: 15_000,
+        maxBuffer: 2_000_000,
+        windowsHide: true,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    const originalDoctor = doctorSchema.parse(JSON.parse(runInstalled(["doctor", "--json"])));
+    requireCondition(
+      originalDoctor.config.db === join(home, ".taximeter", "ledger.db") &&
+        originalDoctor.config.budgets.global.amount === "100000000",
+      "The installed doctor's JSON must describe the isolated home and the default budget.",
+    );
+    console.log(
+      "PASS: installed doctor --json reports the effective default configuration and local ledger.",
+    );
+
+    const written = runInstalled(["config", "set", "budgets.global.amount", "200USDC"]);
+    const configPath = join(home, ".taximeter", "config.json");
+    z.object({ budgets: z.object({ global: z.object({ amount: z.literal("200000000") }) }) }).parse(
+      JSON.parse(readFileSync(configPath, "utf8")),
+    );
+    requireCondition(
+      written.includes(`Written to ${configPath}`) &&
+        written.includes("Restart taximeter for this to take effect."),
+      "The installed config command must identify its isolated write target and restart requirement.",
+    );
+    requireCondition(
+      runInstalled(["config", "get", "budgets.global.amount"]).trim() === "200000000",
+      "The installed config get command did not return the exact atomic amount.",
+    );
+    const updatedDoctor = doctorSchema.parse(JSON.parse(runInstalled(["doctor", "--json"])));
+    requireCondition(
+      updatedDoctor.config.db === originalDoctor.config.db &&
+        updatedDoctor.config.budgets.global.amount === "200000000",
+      "The installed doctor's JSON does not agree with the stored and retrieved budget.",
+    );
+    requireCondition(
+      !existsSync(join(cwd, "taximeter.config.json")),
+      "Config set changed the smoke working directory.",
+    );
+    console.log("PASS: installed config set/get stores 200USDC as 200000000; doctor JSON agrees.");
+
+    const unchanged = await fetchLocal("/api/summary", "application/json");
+    freshSummarySchema
+      .extend({ version: z.literal(manifest.version) })
+      .parse(await unchanged.json());
+    console.log("PASS: editing the file does not change the already-running meter before restart.");
     console.log(
       "PASS: smoke HTTP requests stayed on loopback; browser network behavior is verified separately.",
     );
