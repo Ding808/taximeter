@@ -8,8 +8,6 @@ the package or run a source checkout. Requires Node 20 or newer and npm.
 
 ![Taximeter dashboard showing an empty local ledger and a 100 USDC budget](https://raw.githubusercontent.com/Ding808/taximeter/main/docs/dashboard.png)
 
-Built with AI, with an auditable record of [protocol corrections](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md), [decisions](https://github.com/Ding808/taximeter/blob/main/DECISIONS.md), [verification](https://github.com/Ding808/taximeter/blob/main/VERIFICATION.md), and [reproducible benchmarks](https://github.com/Ding808/taximeter/tree/main/benchmarks).
-
 ## A 20-second demo
 
 ![Taximeter meters a real testnet payment and blocks the next payment](docs/demo.gif)
@@ -73,7 +71,7 @@ installed copy.
 You should now see:
 
 ```text
-Taximeter 0.3.1
+Taximeter 0.3.2
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
