@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { deriveEvents, formatAmount, totals } from "../src/ledger/derive";
 import { Ledger } from "../src/ledger/store";
 import { type Outcome, outcomeSchema, type PaymentEvent, paymentEventSchema } from "../src/model";
@@ -271,6 +271,27 @@ describe("append-only SQLite ledger", () => {
     expect(ledger.diagnostics()).toEqual([]);
   });
 
+  test("counts observed and blocked rows without loading event payloads", () => {
+    const ledger = open();
+    const fullHistory = vi.spyOn(ledger, "events").mockImplementation(() => {
+      throw new Error("Event counting must not hydrate the ledger");
+    });
+    try {
+      expect(ledger.eventCount()).toBe(0);
+      const original = payment(1);
+      expect(ledger.append(original)).toBe(true);
+      expect(ledger.append(original)).toBe(false);
+      expect(ledger.eventCount()).toBe(1);
+      ledger.append(payment(2, { status: "blocked", reason: "global_payment_count" }));
+      ledger.appendOutcome(outcome(11, original.id, "confirmed"));
+      ledger.diagnose("parse_failed", "fixture", "A diagnostic is not a payment event");
+      expect(ledger.eventCount()).toBe(2);
+      expect(fullHistory).not.toHaveBeenCalled();
+    } finally {
+      fullHistory.mockRestore();
+    }
+  });
+
   test("deduplicates observed payment keys while accepting unattributed events", () => {
     const ledger = open();
     const original = payment(1, { taskId: undefined, agentId: undefined });
@@ -408,7 +429,7 @@ describe("append-only SQLite ledger", () => {
     const future = new Database(path);
     try {
       future.exec(
-        "CREATE TABLE schema_version (version INTEGER PRIMARY KEY); INSERT INTO schema_version VALUES (3)",
+        "CREATE TABLE schema_version (version INTEGER PRIMARY KEY); INSERT INTO schema_version VALUES (4)",
       );
     } finally {
       future.close();
@@ -416,7 +437,7 @@ describe("append-only SQLite ledger", () => {
     expect(() => new Ledger(path)).toThrow();
     const inspector = new Database(path);
     try {
-      expect(inspector.prepare("SELECT version FROM schema_version").get()).toEqual({ version: 3 });
+      expect(inspector.prepare("SELECT version FROM schema_version").get()).toEqual({ version: 4 });
     } finally {
       inspector.close();
     }

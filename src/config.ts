@@ -1,12 +1,17 @@
 import { z } from "zod";
 import { amountSchema, httpUrlSchema, labelSchema } from "./model";
 
-export const budgetSchema = z.strictObject({
-  amount: amountSchema,
+const budgetFieldsSchema = z.strictObject({
+  amount: amountSchema.optional(),
+  maxPayments: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   asset: labelSchema,
   network: labelSchema.optional(),
   window: z.enum(["1h", "24h", "7d", "30d"]).optional(),
 });
+export const budgetSchema = budgetFieldsSchema.refine(
+  (budget) => budget.amount !== undefined || budget.maxPayments !== undefined,
+  { message: "A budget must set amount or maxPayments", path: ["amount"] },
+);
 export type Budget = z.infer<typeof budgetSchema>;
 export const policySchema = z.strictObject({
   allowHosts: z.array(labelSchema).default([]),
@@ -42,9 +47,9 @@ export type TaximeterConfig = z.infer<typeof configSchema>;
 export const configPatchSchema = z.strictObject({
   budgets: z
     .strictObject({
-      perTask: budgetSchema.partial().nullable().optional(),
-      perAgent: budgetSchema.partial().nullable().optional(),
-      global: budgetSchema.partial().nullable().optional(),
+      perTask: budgetFieldsSchema.partial().nullable().optional(),
+      perAgent: budgetFieldsSchema.partial().nullable().optional(),
+      global: budgetFieldsSchema.partial().nullable().optional(),
     })
     .optional(),
   policy: z
@@ -75,8 +80,17 @@ export function parseConfig(...layers: unknown[]): TaximeterConfig {
     const budgets = { ...current.budgets };
     for (const key of ["perTask", "perAgent", "global"] as const) {
       const next = layer.budgets?.[key];
-      if (next !== undefined)
-        budgets[key] = next === null ? null : budgetSchema.parse({ ...budgets[key], ...next });
+      if (next === undefined) continue;
+      if (next === null) {
+        budgets[key] = null;
+        continue;
+      }
+      const parsed = budgetSchema.safeParse({ ...budgets[key], ...next });
+      if (!parsed.success)
+        throw new z.ZodError(
+          parsed.error.issues.map((issue) => ({ ...issue, path: ["budgets", key, ...issue.path] })),
+        );
+      budgets[key] = parsed.data;
     }
     current = configSchema.parse({
       ...current,

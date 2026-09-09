@@ -10,6 +10,15 @@ export function assetMetadata(network: string, asset: string) {
     : { decimals: 0, decimalsKnown: false };
 }
 
+/** Enumerate the same offline registry used to recognize payment assets. */
+export function knownAssets() {
+  return Object.entries(usdc).map(([network, asset]) => ({
+    network,
+    asset,
+    ...assetMetadata(network, asset),
+  }));
+}
+
 export function matchesAsset(
   selector: string,
   payment: { network: string; asset: string },

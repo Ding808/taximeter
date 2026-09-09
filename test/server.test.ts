@@ -143,6 +143,9 @@ describe("local read-only dashboard API", () => {
       expect(state.unknownEvents).toBe(4);
       expect(state.totals).toEqual(totals(events));
       expect(state.totals.map((total) => total.amount).sort()).toEqual(["19", "64"]);
+      expect(state.budgets).toEqual([
+        expect.objectContaining({ count: "4", countLimit: null, countRemaining: null }),
+      ]);
       expect(state.groups.task).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ key: "task-a", assetSymbol: "USDC", amount: "24" }),
@@ -375,6 +378,113 @@ describe("local read-only dashboard API", () => {
 });
 
 describe("dashboard state windows", () => {
+  test("count-only state uses spend eligibility, rolling windows and exact asset/network scope", () => {
+    const ledger = new Ledger(":memory:");
+    const now = Date.parse("2026-09-08T12:00:00.000Z");
+    try {
+      const boundary = event({ ts: "2026-09-08T11:00:00.000Z" });
+      for (const value of [
+        boundary,
+        boundary,
+        event({ amount: "0" }),
+        event({ status: "blocked" }),
+        event({ settlementStatus: "failed" }),
+        event({ ts: "2026-09-08T10:59:59.999Z" }),
+        event({ ts: "2026-09-08T12:00:00.001Z" }),
+        event({ network: "eip155:84532", asset: "0x036cbd53842c5426634e7929541ec2318f3dcf7e" }),
+        event({ asset: "other" }),
+      ])
+        ledger.append(value);
+      const config = parseConfig(
+        { budgets: { global: null } },
+        {
+          budgets: {
+            global: { asset: "USDC", network: "eip155:8453", maxPayments: 1, window: "1h" },
+          },
+        },
+      );
+      const state = dashboardState(ledger, config, now);
+      expect(state.globalBudget).toEqual({
+        asset: "USDC",
+        network: "eip155:8453",
+        maxPayments: 1,
+        window: "1h",
+      });
+      expect(state.budgets).toEqual([
+        {
+          network: boundary.network,
+          asset: boundary.asset,
+          limit: null,
+          spent: "7",
+          remaining: null,
+          count: "2",
+          countLimit: "1",
+          countRemaining: "0",
+          window: "1h",
+        },
+      ]);
+      expect(dashboardState(ledger, config, now + 1).budgets).toEqual([
+        expect.objectContaining({ count: "2", spent: "7" }),
+      ]);
+    } finally {
+      ledger.close();
+    }
+  });
+
+  test("combined budgets retain exact amount fields and publish independent count headroom", () => {
+    const ledger = new Ledger(":memory:");
+    const now = Date.parse("2026-09-08T12:00:00.000Z");
+    try {
+      ledger.append(event());
+      ledger.append(event());
+      const state = dashboardState(
+        ledger,
+        parseConfig({ budgets: { global: { amount: "100", maxPayments: 5 } } }),
+        now,
+      );
+      expect(state.budgets).toEqual([
+        expect.objectContaining({
+          limit: "100",
+          spent: "14",
+          remaining: "86",
+          count: "2",
+          countLimit: "5",
+          countRemaining: "3",
+        }),
+      ]);
+      expect(
+        dashboardState(ledger, parseConfig({ budgets: { global: null } }), now).budgets,
+      ).toEqual([]);
+    } finally {
+      ledger.close();
+    }
+  });
+
+  test("count settings add no dashboard write endpoint", async () => {
+    await withDashboard(
+      async ({ ledger, port }) => {
+        seed(ledger);
+        const before = dashboardStateSchema.parse(
+          JSON.parse((await get(port, "/api/summary")).body.toString("utf8")),
+        );
+        expect(before.globalBudget?.maxPayments).toBe(5);
+        for (const path of ["/api/config", "/api/config/budgets/global", "/api/summary"])
+          for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+            const response = await get(port, path, { method });
+            expect(response.status).toBe(405);
+            expect(JSON.parse(response.body.toString("utf8"))).toEqual({ error: "read_only" });
+          }
+        const after = dashboardStateSchema.parse(
+          JSON.parse((await get(port, "/api/summary")).body.toString("utf8")),
+        );
+        expect(after.budgets).toEqual(before.budgets);
+        expect(after.globalBudget).toEqual(before.globalBudget);
+        expect(after.totalEvents).toBe(before.totalEvents);
+      },
+      { budgets: { global: { maxPayments: 5 } } },
+    );
+  });
+
   test("rolling budget boundaries, renewed exposure, and remaining amounts use exact arithmetic", () => {
     const ledger = new Ledger(":memory:");
     const now = Date.parse("2026-09-08T12:30:00.000Z");

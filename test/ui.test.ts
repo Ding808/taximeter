@@ -80,6 +80,9 @@ describe("dashboard communicates the real ledger state", () => {
             limit: "10000000",
             spent: "2000000",
             remaining: "8000000",
+            count: "2",
+            countLimit: null,
+            countRemaining: null,
             window: "24h",
           },
         ],
@@ -90,7 +93,87 @@ describe("dashboard communicates the real ledger state", () => {
     expect(html).toContain("Ledger total");
     expect(html).toContain("8.000000");
     expect(html).toContain("20.00% of the active global budget used");
+    expect(html).not.toContain("payment-count budget used");
   });
+
+  test("count-only budgets show their consumption and never label the asset uncapped", () => {
+    const current = total({ amount: "14" });
+    const html = render(
+      state({
+        globalBudget: { asset: "USDC", maxPayments: 20, window: "1h" },
+        totals: [current],
+        budgets: [
+          {
+            network: current.network,
+            asset: current.asset,
+            limit: null,
+            spent: "14",
+            remaining: null,
+            count: "2",
+            countLimit: "20",
+            countRemaining: "18",
+            window: "1h",
+          },
+        ],
+      }),
+    );
+    expect(html).toContain("Active global payment-count budget");
+    expect(html).toContain("2 / 20 payments");
+    expect(html).toContain("10.00% of the active global payment-count budget used");
+    expect(html).toContain('class="mono">18</strong> payments remaining');
+    expect(html).toContain("Rolling 1h");
+    expect(html).not.toMatch(/Uncapped|No global budget|NaN|Infinity/);
+  });
+
+  test("a count-only budget is visible before the first recorded payment", () => {
+    const html = render(state({ globalBudget: { asset: "USDC", maxPayments: 5, window: "1h" } }));
+    expect(html).toContain("BUDGET SPEND · 1H");
+    expect(html).toContain("0 / 5 payments");
+    expect(html).toContain('class="mono">5</strong> payments remaining');
+    expect(html).not.toContain("Uncapped");
+  });
+
+  test("combined budgets render separate amount and payment-count meters", () => {
+    const current = total();
+    const html = render(
+      state({
+        globalBudget: { asset: "USDC", amount: "10000000", maxPayments: 5, window: "24h" },
+        totals: [current],
+        budgets: [
+          {
+            network: current.network,
+            asset: current.asset,
+            limit: "10000000",
+            spent: "2000000",
+            remaining: "8000000",
+            count: "2",
+            countLimit: "5",
+            countRemaining: "3",
+            window: "24h",
+          },
+        ],
+      }),
+    );
+    expect(html).toContain("20.00% of the active global budget used");
+    expect(html).toContain("40.00% of the active global payment-count budget used");
+    expect(html).toContain("2 / 5 payments");
+  });
+
+  test("a disabled budget stays uncapped without inventing a payment-count limit", () => {
+    const html = render(state({ globalBudget: null, totals: [total()] }));
+    expect(html).toContain("No global budget for this asset");
+    expect(html).toContain("Uncapped");
+    expect(html).not.toContain("payments remaining");
+  });
+
+  test.each(["now", "task", "agent", "host", "timeline", "export"] as const)(
+    "%s stays read-only and provides no configuration form or write endpoint",
+    (view) => {
+      const html = render(state({ totals: [total()] }), view);
+      expect(html).toContain("Read-only dashboard");
+      expect(html).not.toMatch(/<form|<input|<textarea|contenteditable|\/api\/config|Save limits/);
+    },
+  );
 
   test("different networks are separate choices rather than a combined USDC figure", () => {
     const html = render(

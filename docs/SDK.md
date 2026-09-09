@@ -8,7 +8,7 @@ Install the registry release with `npm install taximeter`. From a source checkou
 run `npm ci` and `npm run build`, then save the examples at the repository root.
 Their `import "taximeter"` statements resolve the package's own built exports.
 To try a local build in another project, run `npm pack`, copy the resulting
-tarball there, and use `npm install ./taximeter-0.2.2.tgz`.
+tarball there, and use `npm install ./taximeter-0.3.0.tgz`.
 
 ## Try it locally
 
@@ -137,6 +137,13 @@ environment, with explicit SDK options taking precedence. See the
 files or environment settings. Keep budgets consistent across writers sharing
 the same database.
 
+Budgets also accept optional `maxPayments`, a positive safe integer. It uses the
+same scope, asset/network match, rolling window, and reservation rules as amount.
+For example, `config: { budgets: { global: { maxPayments: 1000 } } }` adds a
+count cap while inheriting the default amount and window. Omitted fields in this
+SDK patch keep their lower-layer values. The CLI's human-unit syntax is for CLI
+input only; SDK amounts remain exact atomic integer strings.
+
 `config.policy.unknownAsset` defaults to `"deny"`. Only network and contract pairs
 in Taximeter's offline asset registry are known; payment-supplied symbols and
 decimal metadata do not establish trust. To use custom-token budgets, explicitly
@@ -149,18 +156,19 @@ wrappers after their requests finish, then let the owner close the ledger.
 Reusing a closed wrapper passes requests directly to the original transport
 without metering. Do not use a closed wrapper for later payments.
 
-Version 0.2.x upgrades existing ledgers to schema version 2 when opening them.
-Source events and outcomes remain unchanged; the added budget index is rebuilt
-from those records. Upgrade all writers together. Older 0.1.x clients cannot
-reopen a migrated database. `ledger.rebuildCache()` repairs the derived index
+The count-budget release upgrades existing ledgers to schema version 3 when opening them.
+Source events and outcomes remain unchanged; the amount/count index is rebuilt
+from those records. Stop all old proxy and SDK writers before upgrading them
+together. Older 0.1.x/0.2.x clients cannot reopen a migrated database, and an
+already-open old writer must not share the upgraded cache. `ledger.rebuildCache()` repairs the derived index
 from the append-only log inside a transaction.
 
-From 0.2.1, opening an on-disk schema-1 ledger prints `Migrating ledger…` to stderr
+Opening an on-disk schema-1 or schema-2 ledger prints `Migrating ledger…` to stderr
 and saves a standalone, WAL-aware backup at
-`<database>.backup-v1-<unique suffix>/ledger.db` before upgrading. The saved path
+`<database>.backup-v<original schema>-<unique suffix>/ledger.db` before upgrading. The saved path
 is printed before the synchronous backfill begins. A backup failure aborts the
 upgrade; a backfill failure rolls it back and retains the completed backup.
-Fresh and schema-2 databases skip this step. See the [rollback instructions](../README.md#configuration)
+Fresh and schema-3 databases skip this step. See the [rollback instructions](../README.md#configuration)
 before using a backup with an older client.
 
 ## Fetch behavior and limits
@@ -183,7 +191,10 @@ before using a backup with an older client.
   wrapper composition above.
 - Recognized authorizations reserve capacity before forwarding. A policy denial
   returns a 402 JSON response with `error: "blocked_by_taximeter"`, `reason`,
-  `budget`, `spent`, and `remaining`, and records a blocked event. The enclosing
+  `budget`, `spent`, `remaining`, and an advisory `fix` command, and records a blocked event.
+  Count denials use decimal count strings in those numeric fields. The same fix
+  is printed to stderr once per reason per process, including across SDK wrappers.
+  It never runs automatically or changes the current configuration. The enclosing
   payment client can apply its own response handling or throw its own error.
 - A parsed unknown asset is denied by default with `reason: "unknown_asset"`,
   `budget: null`, `spent: "0"`, and `remaining: null`. Unsupported or unparseable

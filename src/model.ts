@@ -72,5 +72,6 @@ export const blockedBodySchema = z.object({
   budget: amountSchema.nullable(),
   spent: integerStringSchema,
   remaining: amountSchema.nullable(),
+  fix: z.string().optional(),
 });
 export type BlockedBody = z.infer<typeof blockedBodySchema>;

@@ -57,7 +57,7 @@ Open a terminal in this source checkout, with Node 20+ and npm installed.
 You should now see:
 
 ```text
-Taximeter 0.2.2
+Taximeter 0.3.0
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
@@ -95,8 +95,104 @@ or `txm` command. The CLI provides:
 | `taximeter export --csv statement.csv` | A new CSV file; refuses to overwrite an existing file. |
 | `taximeter export --json statement.json` | Event history, raw authorizations, and totals. With no format, JSON goes to stdout. |
 | `taximeter export --invoice statement.html` | A printable HTML spending statement. |
-| `taximeter doctor` | Local configuration and SQLite checks; no network probes. |
+| `taximeter doctor [--json]` | Effective configuration, source layers, and SQLite checks; no network probes. |
+| `taximeter config path` | Configuration layers and the default file to edit. |
+| `taximeter config show [--json]` | The merged effective configuration. |
+| `taximeter config get <key>` | One effective value by dot path. |
+| `taximeter config set <key> <value>` | Validate and save a setting; restart to apply it. |
+| `taximeter config unset <key>` | Remove a file override and inherit the lower layer. |
 | `taximeter reset --yes` | Archives the ledger. Stop **all CLI and SDK writers** first. |
+
+## Changing limits
+
+Check the effective configuration first, then change the limit and restart:
+
+```sh
+taximeter doctor
+taximeter config set budgets.global.amount 200USDC
+taximeter config set budgets.perTask.maxPayments 200
+taximeter config set budgets.perAgent.maxPayments 1000
+taximeter config get budgets.global.amount
+# 200000000
+taximeter start
+```
+
+Stop the previous process before starting it again. There is no hot reload.
+`doctor --json` includes the same resolved configuration used by that command,
+the source layers, and local checks. It does not inspect an already-running
+process or recover the flags used to start it. `config show --json` prints just
+the resolved configuration.
+
+Use human units for amounts: `5USDC`, `"5 USDC"`, and `5usdc` all store
+`"5000000"`; `0.001USDC` stores `"1000"`. A bare integer such as `5000000` is
+always an atomic-unit value. Conversion uses the offline asset registry and
+rejects unknown symbols, mismatched assets, or excess decimal places; it never
+guesses decimals or rounds. For an unknown asset, use an exact atomic integer.
+Payment counts are positive integers without units.
+
+Amount budgets stop spending too much. Payment-count budgets stop an agent from
+making an excessive number of tiny payments while spending little. Each scope
+checks amount first, then count, with the same asset, network, and rolling window.
+Unknown settlements reserve both; blocked or known-failed payments consume neither.
+Zero-amount payments still count. Reusing the same reservation does not count twice.
+Count limits are optional and off by default; they are rolling budgets, not a
+payments-per-second rate limiter.
+
+Keep conservative defaults in `~/.taximeter/config.json`, then override selected
+values per project in `taximeter.config.json`. Files merge **key by key**, so a
+project amount change retains the home's count limit and window. The priority is:
+flags → environment → `--config` → cwd file → home file → built-in defaults.
+`config path` and `doctor` show which files exist, which contribute, and which
+keys are overridden. An omitted field inherits; `unset` removes the target file's
+override. `null` disables a whole budget or the nullable single-payment cap:
+
+```sh
+taximeter config set policy.maxSinglePayment 0.5USDC
+taximeter config set policy.allowHosts api.example.com,data.example.com
+taximeter config set budgets.perTask null
+taximeter config unset policy.allowHosts
+```
+
+An empty allow-list allows all hosts or recipients. A populated allow-list allows
+only its listed entries; host matching is exact and case-insensitive.
+
+`set` and `unset` write the existing cwd file, otherwise the home file. Use
+`--file <path>` to choose a destination. `--config <path>` selects an additional
+**read layer**, so pass `--file` too when editing that explicit file. Writes validate
+both the patch and the merged result before replacing the file atomically through
+a temporary file in the same directory, created with mode `0o600`. Invalid values
+or unknown keys leave the original file unchanged; misspelled keys get a suggestion.
+
+For a single run, override limits without saving them:
+
+```sh
+taximeter start --budget-global 200USDC --max-payments-global 1000 --max-single 0.5USDC
+taximeter start --allow-host api.example.com --allow-host data.example.com
+```
+
+Also available: `--budget-task`, `--budget-agent`, `--max-payments-task`,
+`--max-payments-agent`, and repeatable `--deny-host`. Host flags replace that
+list for the run. Startup prints every active flag override. A flag can enable
+a disabled budget; when no asset is inherited, it uses USDC.
+
+A fully resolved budget can contain only `maxPayments`, with no amount limit.
+Because file omissions inherit lower settings, adding `maxPayments` alone does
+not remove an inherited amount limit. To establish a count-only budget across
+layers, disable that scope in the lower file, then set `{ "asset": "USDC",
+"maxPayments": 200 }` in the higher file. Alternatively, disable the stored scope
+and enable it for one run with `--max-payments-global 200` (or its task/agent flag).
+Use `doctor` to confirm the resulting amount and window before starting.
+
+Blocked responses include an advisory `fix` command; the terminal prints it once
+per reason per process. Numeric hints raise the affected bound enough for that
+payment. At the largest representable limit, the hint disables the affected
+budget. Host/recipient hints clear the relevant list, and `unknown_asset` suggests
+an explicit opt-in. Review those policy changes before running them. Hints never
+execute automatically. After editing, restart without conflicting override flags;
+when using `--config`, edit the selected file with `--file` as needed.
+
+**The dashboard is read-only by design.** It shows amount and payment-count usage
+but has no configuration write endpoints: a web page cannot relax spending limits.
 
 ## How it works
 
@@ -122,7 +218,7 @@ their amount before forwarding the payment replay.
 Policy evaluation and reservation share one SQLite transaction, so concurrent
 payments cannot all consume the same remaining capacity.
 Append-only payment, outcome, and diagnostic records derive every total with BigInt.
-Payment checks use an incrementally maintained index of exact budget sums, avoiding
+Payment checks use an incrementally maintained index of exact budget sums and counts, avoiding
 a replay of all prior payments. The index can be rebuilt from the original log.
 The local dashboard polls that ledger every second and exports the same counted amounts.
 
@@ -146,16 +242,18 @@ as text to prevent a spreadsheet application from rounding them.
 
 ## Configuration
 
-When upgrading from 0.1.x, upgrade all writers together. Opening an existing
-ledger prints `Migrating ledger…`, saves a standalone schema-1 backup beside it
-at `<database>.backup-v1-<unique suffix>/ledger.db`, and prints the backup path
-before building the budget index. The backup includes committed WAL records;
+Before upgrading, stop **all proxy and SDK writers**, then upgrade them together.
+Opening a schema-1 (0.1.x) or schema-2 (0.2.x) ledger prints `Migrating ledger…`,
+saves a standalone backup beside it at
+`<database>.backup-v<original schema>-<unique suffix>/ledger.db`, and prints the
+backup path before migration. Schema 3 adds payment counts to the existing
+prefix index and rebuilds both projections from the audit log. The backup includes committed WAL records;
 if it cannot be completed, the upgrade stops. Large ledgers take longer on this
 first open. Fresh databases and already-upgraded ledgers do not create backups.
 
-The source log is preserved, but older 0.1.x clients cannot reopen the upgraded
+The source log is preserved, but older 0.1.x/0.2.x clients cannot reopen the upgraded
 database. To roll back, stop all CLI and SDK writers, copy the saved `ledger.db`
-to a **new database path**, and start 0.1.x with `--db` pointing there. Keep the
+to a **new database path**, and start the matching older version with `--db` pointing there. Keep the
 upgraded database: the backup does not contain payments made after migration.
 Backups are retained until you remove them; a `ledger.partial.db` file means the
 backup did not finish and must not be used for rollback. Progress goes to stderr,
@@ -173,7 +271,8 @@ invalid values are rejected with Zod.
 | `budgets.perTask` | `{"amount":"5000000","asset":"USDC"}` | 5 USDC per task, all time. `null` disables it. |
 | `budgets.perAgent` | `{"amount":"50000000","asset":"USDC","window":"24h"}` | 50 USDC per agent in a rolling 24 hours. `null` disables it. |
 | `budgets.global` | `{"amount":"100000000","asset":"USDC","window":"24h"}` | 100 USDC per network/asset in a rolling 24 hours. `null` disables it. |
-| Each budget's `amount` | Scope default above | Nonnegative integer string in atomic units, at most 78 digits. |
+| Each budget's `amount` | Scope default above | Optional nonnegative integer string in atomic units, at most 78 digits. At least `amount` or `maxPayments` must be present in a resolved budget. |
+| Each budget's `maxPayments` | Omitted | Optional positive safe integer, at most 9007199254740991. Counts the same payments as spend within the scope's window. |
 | Each budget's `asset` | `USDC` | Trusted local symbol or exact contract address. |
 | Each budget's `network` | Omitted | Optional exact network such as `eip155:8453`; otherwise evaluate each network separately. |
 | Each budget's `window` | Scope default above | `1h`, `24h`, `7d`, or `30d`; omitted means all time. |
@@ -213,12 +312,15 @@ A denied replay receives HTTP 402 before it reaches the upstream. For a cap of
   "reason": "global_budget",
   "budget": "140",
   "spent": "140",
-  "remaining": "0"
+  "remaining": "0",
+  "fix": "taximeter config set budgets.global.amount 147"
 }
 ```
 
 Reasons are `host_denied`, `host_not_allowed`, `recipient_not_allowed`, `unknown_asset`,
-`max_single_payment`, `per_task_budget`, `per_agent_budget`, and `global_budget`.
+`max_single_payment`, `per_task_budget`, `per_agent_budget`, `global_budget`,
+`per_task_payment_count`, `per_agent_payment_count`, and `global_payment_count`.
+Count denials use decimal count strings in `budget`, `spent`, and `remaining`.
 Host, recipient, and unknown-asset denials have `budget: null`, `spent: "0"`, and
 `remaining: null`.
 
