@@ -4,7 +4,7 @@ import type { WireRequest, WireResponse } from "../src/rails/types";
 import { X402Rail } from "../src/rails/x402";
 
 // Synthetic wire examples derived from the primary-source v1/v2 and exact EVM
-// specifications linked in SPEC-NOTES.md. These signatures never move funds.
+// specifications linked in docs/PROTOCOL.md. These signatures never move funds.
 const RESOURCE = "https://api.example.test/premium-data?query=one";
 const TOKEN = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 const OTHER_TOKEN = "0x1111111111111111111111111111111111111111";

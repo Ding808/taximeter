@@ -35,5 +35,5 @@ For a traffic issue, describe the method, encoding, status, and bytes that chang
 
 ## Checks
 
-- [ ] I checked whether the payment form is supported in `SPEC-NOTES.md`.
+- [ ] I checked whether the payment form is supported in `docs/PROTOCOL.md`.
 - [ ] I removed authorizations, credentials, and private information from this report.

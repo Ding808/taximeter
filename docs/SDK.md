@@ -213,7 +213,7 @@ Base Sepolia, and v2 with EVM CAIP-2 networks. Permit2, ERC-7710, other schemes,
 and other rails remain unmetered. Known Base/Base Sepolia USDC uses six decimal
 places; explicitly allowed unknown tokens remain exact atomic units. Budgets and totals are
 separate for every network and asset. See
-[protocol notes](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md) for
+[protocol and accounting](https://github.com/Ding808/taximeter/blob/main/docs/PROTOCOL.md) for
 wire formats, challenge correlation, idempotency, and settlement rules.
 
 ## Read the same ledger from the CLI

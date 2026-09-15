@@ -1,5 +1,11 @@
 # Taximeter
 
+## 0.3.3
+
+### Patch Changes
+
+- Consolidate protocol and testing documentation, update usage links, and retain reproducible benchmark and testnet examples.
+
 ## 0.3.2
 
 ### Patch Changes

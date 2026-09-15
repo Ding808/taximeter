@@ -71,7 +71,7 @@ installed copy.
 You should now see:
 
 ```text
-Taximeter 0.3.2
+Taximeter 0.3.3
 Proxy: http://127.0.0.1:8402
 Dashboard: http://127.0.0.1:8403
 Point an HTTP-proxy-aware agent at http://127.0.0.1:8402.
@@ -260,7 +260,7 @@ Repeated EIP-3009 authorizations count once across retries, using network, contr
 payer, nonce, amount, recipient, and validity bounds. Conflicting authorization
 details receive separate reservations. Each unresolved forwarding attempt keeps
 capacity reserved; an old unconfirmed retry must reacquire capacity in the current
-window. [Protocol notes](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md)
+window. [Protocol and accounting](https://github.com/Ding808/taximeter/blob/main/docs/PROTOCOL.md)
 explain these rules and the supported subset.
 
 CSV `amount` is the counted contribution, including zero for blocked/known failed
@@ -382,5 +382,5 @@ describe the measured costs and migration constraints.
 ## Contributing / license
 
 See the [contribution guide](https://github.com/Ding808/taximeter/blob/main/CONTRIBUTING.md)
-for development instructions, design documents, and verification evidence.
+for development instructions and testing methods.
 Licensed under [MIT](LICENSE).

@@ -41,9 +41,8 @@ const generated = [
   ".vscode/local.private.json",
 ];
 const required = [
-  "SPEC-NOTES.md",
-  "DECISIONS.md",
-  "VERIFICATION.md",
+  "docs/PROTOCOL.md",
+  "docs/TESTING.md",
   "README.md",
   "CONTRIBUTING.md",
   "SECURITY.md",

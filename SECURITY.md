@@ -31,7 +31,7 @@ against a hostile agent or another process running as the same user.
 
 - Unsupported or malformed payment forms pass through with a diagnostic.
   Supported parsing is narrower than the full x402 protocol; see
-  [protocol notes](https://github.com/Ding808/taximeter/blob/main/SPEC-NOTES.md).
+  [protocol and accounting](https://github.com/Ding808/taximeter/blob/main/docs/PROTOCOL.md).
 - Parsed payments outside the offline asset registry are denied by default.
   Setting `policy.unknownAsset` to `allow` permits them; only matching contract
   budgets and caps then apply. Metadata supplied with a payment does not make its asset trusted.

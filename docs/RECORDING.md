@@ -58,7 +58,8 @@ agg --font-family Consolas --font-size 18 --line-height 1.1 --theme github-dark 
 ```
 
 That command uses a four-second final pause. The shipped rendering adjusts the
-final hold to the duration recorded in [verification](../VERIFICATION.md#022-live-testnet-payment-and-first-connect-notice).
+final hold for readability. The [testing guide](TESTING.md#live-testnet-evidence)
+links the recorded payment evidence.
 Review the result before replacing `docs/demo.gif`; the package must remain under 2 MB.
 
 ## Capture a new run with asciinema

@@ -1,8 +1,8 @@
 # Contributing to Taximeter
 
 Taximeter observes agent payments, records them locally, and gates supported
-authorizations against budgets. Start with [SPEC-NOTES.md](SPEC-NOTES.md) for the supported protocol and
-[DECISIONS.md](DECISIONS.md) for implementation choices.
+authorizations against budgets. See [protocol and accounting](docs/PROTOCOL.md)
+for supported payments and [testing](docs/TESTING.md) for reproducible checks.
 
 ## Development
 
@@ -60,7 +60,7 @@ payment lifecycles without changing the product's storage format.
 
 Read the primary x402 specification and published package types before changing
 a wire parser. Record changed assumptions and supported subsets in
-`SPEC-NOTES.md`. An internal model field is not necessarily a protocol field.
+`docs/PROTOCOL.md`. An internal model field is not necessarily a protocol field.
 
 ## Tests and review
 
@@ -89,7 +89,7 @@ Each case reports JSON to stdout and progress to stderr; it verifies exact
 source totals, settlement, attribution, budget rejection, and cache partition
 roots after timing. Source verification streams one payment at a time so a
 500,000-payment run does not allocate a full replay array. Measurements and
-their limits are recorded in [VERIFICATION.md](VERIFICATION.md).
+their limits are recorded in [the testing guide](docs/TESTING.md).
 
 Golden CSV snapshots live in `test/__snapshots__/`. Regenerate a snapshot only
 for an intentional output change that is explained in the pull request and

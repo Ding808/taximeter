@@ -1,8 +1,11 @@
 # deps & build
 node_modules/
 
-# Local build brief
+# Local notes
 /SPEC.md
+/SPEC-NOTES.md
+/DECISIONS.md
+/VERIFICATION.md
 dist/
 *.tsbuildinfo
 .vite/
